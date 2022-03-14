@@ -3,29 +3,21 @@
 name: CI
 
 on:
+  pull_request: {}
   push:
     branches:
       - main 
-  pull_request:
-    
-
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+  
 jobs:
-  build:
+  check_pr_labels_job:
     runs-on: ubuntu-latest
-    name: testing
+    name: A job to check the PR labels contain given labels
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world! test
-        
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: |
-          echo "$GITHUB_CONTEXT"
-          echo "${{ toJson(github.event.pull_request.labels.*.name) }}"
+    - name: Check PR labels action step
+      id: check_pr_labels
+      uses: shioyang/check-pr-labels-on-push-action@v1.0.3
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        labels: '["enhancement"]'
+    - name: See result
+      run: echo "${{ steps.check_pr_labels.outputs.result }}"
