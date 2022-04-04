@@ -1,7 +1,6 @@
 name: CI
 
 on:
-  pull_request: {}
   push:
     branches:
       - main 
@@ -22,9 +21,9 @@ jobs:
       run: echo "${{ steps.check_pr_labels.outputs.result }}"
 
     - name: true step
-      if: ${{ steps.check_pr_labels.outputs.result }} == true
+      if: ${{ steps.check_pr_labels.outputs.result }} == "true"
       run: echo "testing the true function"
 
     - name: false step
-      if: steps.check_pr_labels.outputs.result != false
+      if: steps.check_pr_labels.outputs.result != "false"
       run: echo "testing the false function"
