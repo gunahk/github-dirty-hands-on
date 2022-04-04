@@ -25,5 +25,5 @@ jobs:
       run: echo "testing the ok function"
 
     - name: false step
-      if: ${{ steps.check_pr_labels.outputs.result == 'false' }}
+      if: ${{ steps.check_pr_labels.outputs.result != 'true' }}
       run: echo "testing the ok function"
