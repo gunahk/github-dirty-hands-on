@@ -17,5 +17,10 @@ jobs:
       with:
         github-token: ${{ secrets.TOKEN }}
         labels: '["bug"]'
-    - name: See result
-      run: echo "${{ steps.check_pr_labels.outputs.result }}"
+    - name: true step
+      if: steps.check_pr_labels.outputs.result == true
+      run: echo "testing the ok function"
+
+    - name: false step
+      if: steps.check_pr_labels.outputs.result != false
+      run: echo "testing the ok function"
