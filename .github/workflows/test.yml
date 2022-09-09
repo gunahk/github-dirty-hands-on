@@ -10,20 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     name: A job to check the PR labels contain given labels
     steps:
-    - name: Check PR labels action step
-      id: check_pr_labels
-      uses: shioyang/check-pr-labels-on-push-action@v1.0.3
-      with:
-        github-token: ${{ secrets.TOKEN }}
-        labels: '["bug"]'
-        
-    - name: See result
-      run: echo "${{ steps.check_pr_labels.outputs.result }}"
-
-    - name: true step
-      if: ${{ steps.check_pr_labels.outputs.result == 'true' }}
-      run: echo "testing the ok function"
-
-    - name: false step
-      if: ${{ steps.check_pr_labels.outputs.result != 'true' }}
-      run: echo "testing the ok function"
+    - name: Building Docker Image
+      run: |
+        echo DOCKER_TAG=${DOCKER_TAG}
+        echo "docker build -t weblinktechs2021/${MICROSERVICE_NAME}:${DOCKER_TAG} --build-arg JAR_FILE=cdc-detector-*-SNAPSHOT.jar ."
+        echo "docker push weblinktechs2021/${MICROSERVICE_NAME}:${DOCKER_TAG}"        
+      env:
+        DOCKER_TAG: ${GITHUB_REF##*/}-${GITHUB_SHA::7}-$(TZ=':Asia/Kolkata' date +%Y-%m-%d-%H-%M-%S)
+        MICROSERVICE_NAME: cdc-detector
