@@ -12,7 +12,7 @@ jobs:
     steps:
     - name: Building Docker Image
       run: |
-        echo DOCKER_TAG=${DOCKER_TAG}
+        echo DOCKER_TAG=${GITHUB_SHA::7}
         echo "docker build -t weblinktechs2021/${MICROSERVICE_NAME}:${DOCKER_TAG} --build-arg JAR_FILE=cdc-detector-*-SNAPSHOT.jar ."
         echo "docker push weblinktechs2021/${MICROSERVICE_NAME}:${DOCKER_TAG}"        
       env:
