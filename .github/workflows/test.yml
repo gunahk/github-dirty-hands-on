@@ -12,7 +12,6 @@ jobs:
     steps:
     - name: Building Docker Image
       run: |
-        echo "${{GITHUB_EVENT_PATH}}"
         echo "${{GITHUB_PATH}}"
         echo "${{GITHUB_STEP_SUMMARY}}"
         echo "${{GITHUB_PATH}}"
