@@ -13,7 +13,14 @@ jobs:
     - name: Building Docker Image
       run: |
         echo "${GITHUB_PATH}"
+        name=guna
+        echo ${name}
         echo "${GITHUB_STEP_SUMMARY}"
         echo "${GITHUB_PATH}"
         echo "${GITHUB_PATH}"
         echo "GITHUB_EVENT_PATH: ${GITHUB_EVENT_PATH}"
+
+
+    - name: echo
+      run: |
+        echo ${name}
