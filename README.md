@@ -8,4 +8,4 @@ github-dirty-hands-on doing
 <a href="https://url-shortener-live.herokuapp.com" target="_blank" rel="noreferrer noopener">View Demo</a>
 
 
-[test](http://test.com)
+[test](https://signup.zluri.dev)
