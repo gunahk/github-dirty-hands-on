@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches:
-      - main 
+      - asdfasf
   
 jobs:
   check_pr_labels_job:
