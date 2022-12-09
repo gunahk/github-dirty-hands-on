@@ -10,17 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     name: A job to check the PR labels contain given labels
     steps:
-    - name: Building Docker Image
+    - name: Authenticate to the Code Articatory
+      id: login-codeartifact
       run: |
-        echo "${GITHUB_PATH}"
-        name=guna
-        echo ${name}
-        echo "${GITHUB_STEP_SUMMARY}"
-        echo "${GITHUB_PATH}"
-        echo "${GITHUB_PATH}"
-        echo "GITHUB_EVENT_PATH: ${GITHUB_EVENT_PATH}"
+        export CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain ${CODEARTIFACT_NAME} --domain-owner ${AWS_ACCOUNT_ID} --region ${AWS_REGION}  --query authorizationToken --output text)
+        PIP_GLOBAL_INDEX_URL=https://aws:$CODEARTIFACT_AUTH_TOKEN@${CODEARTIFACT_NAME}-${AWS_ACCOUNT_ID}.d.codeartifact.${AWS_REGION}.amazonaws.com/pypi/pypi-store/simple/
+        echo $PIP_GLOBAL_INDEX_URL
 
 
     - name: echo
       run: |
-        echo ${name}
+        echo ${PIP_GLOBAL_INDEX_URL}
