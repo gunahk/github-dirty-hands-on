@@ -16,8 +16,10 @@ jobs:
         export CODEARTIFACT_AUTH_TOKEN=aws
         PIP_GLOBAL_INDEX_URL=https://aws:$CODEARTIFACT_AUTH_TOKEN@d.codeartifactamazonaws.com/pypi/pypi-store/simple/
         echo $PIP_GLOBAL_INDEX_URL
-        echo "::set-env name=PIP_GLOBAL_INDEX_URL::$PIP_GLOBAL_INDEX_URL"
+        echo "PIP_GLOBAL_INDEX_URL=${PIP_GLOBAL_INDEX_URL}" >> $GITHUB_ENV
 
     - name: echo
       run: |
         echo ${PIP_GLOBAL_INDEX_URL}
+        echo ${{ env.PIP_GLOBAL_INDEX_URL }}
+        
