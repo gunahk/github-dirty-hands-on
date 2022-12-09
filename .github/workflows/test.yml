@@ -17,6 +17,7 @@ jobs:
         PIP_GLOBAL_INDEX_URL=https://aws:$CODEARTIFACT_AUTH_TOKEN@d.codeartifactamazonaws.com/pypi/pypi-store/simple/
         echo $PIP_GLOBAL_INDEX_URL
         echo "PIP_GLOBAL_INDEX_URL=${PIP_GLOBAL_INDEX_URL}" >> $GITHUB_ENV
+        echo "::add-mask::$PIP_GLOBAL_INDEX_URL"
 
     - name: decho
       run: |
