@@ -13,7 +13,7 @@ jobs:
     - name: Authenticate to the Code Articatory
       id: login-codeartifact
       run: |
-        export CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain ${CODEARTIFACT_NAME} --domain-owner ${AWS_ACCOUNT_ID} --region ${AWS_REGION}  --query authorizationToken --output text)
+        export CODEARTIFACT_AUTH_TOKEN=aws codeartifact get-authorization-token --domain ${CODEARTIFACT_NAME} --domain-owner ${AWS_ACCOUNT_ID} --region ${AWS_REGION}  --query authorizationToken --output text
         PIP_GLOBAL_INDEX_URL=https://aws:$CODEARTIFACT_AUTH_TOKEN@${CODEARTIFACT_NAME}-${AWS_ACCOUNT_ID}.d.codeartifact.${AWS_REGION}.amazonaws.com/pypi/pypi-store/simple/
         echo $PIP_GLOBAL_INDEX_URL
 
