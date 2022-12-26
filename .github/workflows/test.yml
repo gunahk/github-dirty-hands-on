@@ -10,16 +10,28 @@ jobs:
     runs-on: ubuntu-latest
     name: A job to check the PR labels contain given labels
     steps:
+    - name: load env from github env
+      run: |
+        echo "key_testing_1=value_form_github_env" >> $GITHUB_ENV
+        
     - name: Authenticate to the Code Articatory
       id: login-codeartifact
+      env:
+        key_testing_1: value_testing_1
       run: |
-        export CODEARTIFACT_AUTH_TOKEN=aws
-        PIP_GLOBAL_INDEX_URL=https://aws:$CODEARTIFACT_AUTH_TOKEN@d.codeartifactamazonaws.com/pypi/pypi-store/simple/
-        echo $PIP_GLOBAL_INDEX_URL
-        echo "PIP_GLOBAL_INDEX_URL=${PIP_GLOBAL_INDEX_URL}" >> $GITHUB_ENV
-        echo "::add-mask::$PIP_GLOBAL_INDEX_URL"
+        name=guna
+        echo ${name}
+        echo ${key_testing_1}
+        echo ${key_testing_1}
     - name: echo
+      env:
+        key_testing_1: value_testing_2
       run: |
-        echo ${PIP_GLOBAL_INDEX_URL}
-        echo ${{ env.PIP_GLOBAL_INDEX_URL }}
+        echo ${name}
+        echo ${key_testing_1}
+     
+    - name: echo with out env secret
+      run: |
+        echo ${name}
+        echo ${key_testing_1}
         
