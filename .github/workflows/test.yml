@@ -13,8 +13,8 @@ jobs:
     - name: load env from github env
       run: |
         echo "key_testing_1=value_form_github_env" >> $GITHUB_ENV
-        echo ${{ github.event.repository }}
-        echo ${{ github.event.repository.name }}
+        echo ${{ github.event.repository.ref_type }}-${GITHUB_REF##*/}
+
         
     - name: Authenticate to the Code Articatory
       id: login-codeartifact
