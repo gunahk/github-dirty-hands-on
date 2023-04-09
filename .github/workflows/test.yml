@@ -12,4 +12,4 @@ jobs:
     steps:
     - name: load env from github env
       run: |
-        echo ${{ github.event.repository.ref_type }}-${GITHUB_REF##*/}:latest 
+        echo ${{ github.event.repository.name }}-${GITHUB_REF##*/}:latest
