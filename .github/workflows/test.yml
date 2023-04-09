@@ -12,28 +12,4 @@ jobs:
     steps:
     - name: load env from github env
       run: |
-        echo "key_testing_1=value_form_github_env" >> $GITHUB_ENV
-        echo ${{ github.event.repository.ref_type }}-${GITHUB_REF##*/}
-
-        
-    - name: Authenticate to the Code Articatory
-      id: login-codeartifact
-      env:
-        key_testing_1: value_testing_1
-      run: |
-        name=guna
-        echo ${name}
-        echo ${key_testing_1}
-        echo ${key_testing_1}
-    - name: echo
-      env:
-        key_testing_1: value_testing_2
-      run: |
-        echo ${name}
-        echo ${key_testing_1}
-     
-    - name: echo with out env secret
-      run: |
-        echo ${name}
-        echo ${key_testing_1}
-        
+        echo ${{ github.event.repository.ref_type }}-${GITHUB_REF##*/}:latest 
