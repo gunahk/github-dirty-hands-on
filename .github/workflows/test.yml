@@ -12,7 +12,7 @@ jobs:
     steps:
     - name: load env from github env
       env: 
-        AWS_ACCOUNT_ID: ${GITHUB_REF##*/}-${GITHUB_SHA::7}-$(TZ=':Asia/Kolkata' date +%Y-%m-%d-%H-%M-%S)"
+        AWS_ACCOUNT_ID: ${GITHUB_SHA::7}
       run: |
         echo ${{ github.event.repository.name }}-${GITHUB_REF##*/}:latest
         echo $AWS_ACCOUNT_ID
