@@ -16,4 +16,4 @@ jobs:
       run: |
         echo ${{ github.event.repository.name }}-${GITHUB_REF##*/}:latest
         echo $AWS_ACCOUNT_ID
-        echo ${GITHUB_REF##*/}
+        echo $(echo ${GITHUB_HEAD_REF} | tr / -)
