@@ -21,7 +21,7 @@ jobs:
 
 
     - name: test env from github env
-      if: github.ref == 'refs/heads/release/*'
+      if: github.ref == refs/heads/release/test
       run: |
         echo ${{ github.event.repository.name }}-${GITHUB_REF##*/}:latest
         echo $AWS_ACCOUNT_ID
