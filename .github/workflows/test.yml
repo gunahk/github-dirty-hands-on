@@ -18,3 +18,12 @@ jobs:
         echo ${{ github.event.repository.name }}-${GITHUB_REF##*/}:latest
         echo $AWS_ACCOUNT_ID
         echo ${{ github.ref_name }}
+
+
+    - name: test env from github env
+      if: endsWith(github.ref, '/release-*')
+      run: |
+        echo ${{ github.event.repository.name }}-${GITHUB_REF##*/}:latest
+        echo $AWS_ACCOUNT_ID
+        echo ${{ github.ref_name }}
+
