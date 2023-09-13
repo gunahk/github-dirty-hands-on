@@ -19,11 +19,10 @@ jobs:
         echo $AWS_ACCOUNT_ID
         echo ${{ github.ref_name }}
 
-
-    - name: test env from github env
-      if: github.ref == 'refs/heads/release/test'
+    - name: Check if branch matches pattern
       run: |
-        echo ${{ github.event.repository.name }}-${GITHUB_REF##*/}:latest
-        echo $AWS_ACCOUNT_ID
-        echo ${{ github.ref_name }}
-
+        if [[ ${{ github.ref }} =~ ^refs/heads/release/.* ]]; then
+          echo "Branch matches the pattern."
+        else
+          echo "Branch does not match the pattern."
+        fi
