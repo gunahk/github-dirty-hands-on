@@ -20,9 +20,8 @@ jobs:
         echo ${{ github.ref_name }}
 
     - name: Check if branch matches pattern
+      if: startsWith(github.ref, 'ref/head/release/')
       run: |
-        if [[ ${{ github.ref }} =~ ^refs/heads/release/.* ]]; then
-          echo "Branch matches the pattern."
-        else
+          echo "Branch matches the pattern." 
           echo "Branch does not match the pattern."
-        fi
+
