@@ -20,7 +20,7 @@ jobs:
         echo ${{ github.ref_name }}
 
     - name: Check if branch matches pattern
-      if: startsWith(github.ref, 'ref/head/release/')
+      if: startsWith(github.ref, 'ref/head/release/test')
       run: |
           echo "Branch matches the pattern." 
           echo "Branch does not match the pattern."
