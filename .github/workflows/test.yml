@@ -23,10 +23,11 @@ jobs:
       if: contains(github.ref, 'release/')
       run: |
           if [[  "${{ github.ref }}" =~ 'release/' ]]; then
-          release_name=$(echo ${{ github.ref_name }}  | cut -d'/' -f4)
-          echo $release_name
-          # Change helm name, namespace, Autoscalling and Endpoint
-          HELM_NAME=${release_name}-helm
-          HELM_NAMESPACE=${release_name}-ns
-
-          echo "$HELM_NAME $HELM_NAMESPACE"
+            release_name=$(echo ${{ github.ref_name }}  | cut -d'/' -f4)
+            echo $release_name
+            # Change helm name, namespace, Autoscalling and Endpoint
+            HELM_NAME=${release_name}-helm
+            HELM_NAMESPACE=${release_name}-ns
+          fi
+            echo "$HELM_NAME $HELM_NAMESPACE"
+        
