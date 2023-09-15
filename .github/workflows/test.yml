@@ -4,7 +4,7 @@ on:
   pull_request: {}
   push:
     branches:
-      - main 
+      - gunahk-patch-1 
   
 jobs:
   check_pr_labels_job:
