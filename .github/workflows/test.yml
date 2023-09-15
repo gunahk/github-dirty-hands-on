@@ -18,15 +18,15 @@ jobs:
         echo ${{ github.event.repository.name }}-${GITHUB_REF##*/}:latest
         echo $AWS_ACCOUNT_ID
         echo ${{ github.ref_name }}
-        if [[  "${{ github.ref }}" =~ 'release/' ]]; then
-          echo "Branch  contain 'release/'."
-        else
-          echo "Branch not contains 'release/'."
-        fi
 
     - name: Check if branch matches pattern
-      if: contains(github.ref, !'release/')
+      if: contains(github.ref, 'release/')
       run: |
-          echo "Branch matches the pattern." 
-          echo "Branch does not match the pattern."
+          if [[  "${{ github.ref }}" =~ 'release/' ]]; then
+          release_name=$(echo ${{ github.ref_name }}  | cut -d'/' -f4)
+          echo $release_name
+          # Change helm name, namespace, Autoscalling and Endpoint
+          HELM_NAME=${release_name}-helm
+          HELM_NAMESPACE=${release_name}-ns
 
+          echo "$HELM_NAME $HELM_NAMESPACE"
