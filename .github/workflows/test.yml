@@ -20,8 +20,8 @@ jobs:
         echo ${{ github.ref_name }}
         if [[ "${{ github.ref }}" == release/* ]]; then
         else
-            echo "Branch does not match the pattern /release/*"
-          fi
+          echo "Branch does not match the pattern /release/*"
+        fi
 
     - name: Check if branch matches pattern
       if: contains(github.ref, !'release/')
