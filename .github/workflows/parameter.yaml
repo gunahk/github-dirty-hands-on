@@ -14,4 +14,4 @@ jobs:
 
     steps:
       - name: Check parameter value
-        run: echo "The value of param1 is ${{ parameters.param1 }}"
+        run: echo "The value of param1 is ${{ github.event.inputs.param1 }} "
