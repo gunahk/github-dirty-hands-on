@@ -6,6 +6,7 @@ on:
       param1:
         description: 'Choose an option: option1, option2, option3'
         required: true
+        default: 'default_value'
 
 jobs:
   build:
@@ -13,24 +14,4 @@ jobs:
 
     steps:
       - name: Check parameter value
-        run: |
-          case ${{ github.event.inputs.param1 }} in
-            option1)
-              echo "Option 1 selected."
-              # Your workflow steps for option 1
-              ;;
-            option2)
-              echo "Option 2 selected."
-              # Your workflow steps for option 2
-              ;;
-            option3)
-              echo "Option 3 selected."
-              # Your workflow steps for option 3
-              ;;
-            *)
-              echo "Invalid option selected."
-              exit 1
-              ;;
-          esac
-          echo "executed success fully"
-          echo "${{ github.event.inputs }}"
+        run: echo "The value of param1 is ${{ parameters.param1 }}"
