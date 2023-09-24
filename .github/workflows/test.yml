@@ -19,7 +19,7 @@ jobs:
         echo $AWS_ACCOUNT_ID
         echo ${{ github.ref_name }}
     - name: Check if branch matches pattern
-      if: contains(github.ref, 'release/') || endsWith(github.ref, '/main')
+      if: endsWith(github.ref, ! '/main')
       run: |
           echo "Branch matches the pattern." 
           echo "Branch does not match the pattern."
