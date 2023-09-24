@@ -19,8 +19,9 @@ jobs:
         echo ${{ github.event.repository.name }}-${GITHUB_REF##*/}:latest
         echo $AWS_ACCOUNT_ID
         echo ${{ github.ref_name }}
+        ECHO ${{ github.ref  }}
     - name: Check if branch matches pattern
-      if: endsWith(github.ref, !'/release') || endsWith(github.ref, !'/feature')
+      if: contains(github.ref_name, !'release') || contains(github.ref_name, !'feature')
       run: |
           echo "Branch matches the pattern." 
           echo "Branch does not match the pattern."
