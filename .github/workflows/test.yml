@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - main
-      - release-*
+      - release/*
+      - feature/*
   
 jobs:
   check_pr_labels_job:
