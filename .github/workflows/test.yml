@@ -26,7 +26,7 @@ jobs:
       run: echo "::set-output name=branch_name::${{ github.ref_name }}"
 
     - name: Run Workflow If Branch Does Not Match 
-      if: ${{ steps.check_branch_name.outputs.branch_name =~ '^feature/.*$' }} &&  ${{ steps.check_branch_name.outputs.branch_name  =~ '^release/.*$' }}
+      if: ! ${{ steps.check_branch_name.outputs.branch_name =~ '^feature/.*$' }} ||  ${{ steps.check_branch_name.outputs.branch_name  =~ '^release/.*$' }}
       run: |
         # Your workflow steps here
         echo "This workflow runs when the branch name does not match 'your-pattern'."
