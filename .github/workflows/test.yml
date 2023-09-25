@@ -23,7 +23,10 @@ jobs:
 
     - name: Check Branch Name
       id: check_branch_name
-      run: echo "::set-output name=branch_name::${{ github.ref_name }}"
+      run: |
+        
+        first_word=$(echo $branch_name | awk -F/ '{print $1}')
+        echo "::set-output name=branch_name::${first_word}"
 
     - name: Run Workflow If Branch Does Not Match 
       if:  ${{ steps.check_branch_name.outputs.branch_name != 'feature' }} ||  ${{ steps.check_branch_name.outputs.branch_name != 'release' }}
