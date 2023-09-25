@@ -1,36 +1,22 @@
-name: CI
+name: Conditional Step
 
 on:
   push:
     branches:
-      - main
-      - release/*
       - feature/*
-  
+      - main
+
 jobs:
-  check_pr_labels_job:
+  conditional_step:
     runs-on: ubuntu-latest
-    name: A job to check the PR labels contain given labels
+    
     steps:
-    - name: load env from github env
-      env: 
-        AWS_ACCOUNT_ID: ${GITHUB_SHA::7}
-      run: |
-        echo ${{ github.event.repository.name }}-${GITHUB_REF##*/}:latest
-        echo $AWS_ACCOUNT_ID
-        echo ${{ github.ref_name }}
-        echo ${{ github.ref  }}
-
     - name: Check Branch Name
-      id: check_branch_name
-      run: |
-        
-        first_word=$(echo $branch_name | awk -F/ '{print $1}')
-        echo $first_word
-        echo "::set-output name=branch_name::${first_word}"
-
-    - name: Run Workflow If Branch Does Not Match 
-      if:  ${{ steps.check_branch_name.outputs.branch_name != 'feature' }} ||  ${{ steps.check_branch_name.outputs.branch_name != 'release' }}
-      run: |
-        # Your workflow steps here
-        echo "This workflow runs when the branch name does not match 'your-pattern'."
+      id: check_branch
+      run: | 
+        first_word=$(echo ${{ github.ref_name }} | awk -F/ '{print $1}')
+        echo "BRANCH_NAME=${first_word}" >> $GITHUB_ENV
+        echo $BRANCH_NAME
+    - name: Run Step Conditionally
+      run: echo "This step runs when the branch doesn't match feature/* or release/*"
+      if:  env.BRANCH_NAME != 'feature' && env.BRANCH_NAME != 'release'
