@@ -26,6 +26,7 @@ jobs:
       run: |
         
         first_word=$(echo $branch_name | awk -F/ '{print $1}')
+        echo $first_word
         echo "::set-output name=branch_name::${first_word}"
 
     - name: Run Workflow If Branch Does Not Match 
