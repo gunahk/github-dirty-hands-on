@@ -11,7 +11,7 @@ name: dashboard-api-build-and-deploy-github-actions-flow
 jobs:
   dashboard_api_build_and_push_to_ECR:
     name: build and push to ECR dashboard_api
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check Branch Name for feature and  release
