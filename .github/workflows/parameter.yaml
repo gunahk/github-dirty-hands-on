@@ -1,18 +1,31 @@
-name: Manual Workflow Trigger
-
 on:
   workflow_dispatch:
     inputs:
-      branch_name:
-        description: 'Branch name to check out'
+      param1:
+        description: 'please select Branch and write Something below to Triggger'
         required: true
+        default: 'default_value'
+
+name: dashboard-api-build-and-deploy-github-actions-flow
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  dashboard_api_build_and_push_to_ECR:
+    name: build and push to ECR dashboard_api
+    runs-on: zluri-self-hosted-iam-role
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.inputs.branch_name }}
+
+      - name: Check Branch Name for feature and  release
+        id: check_branch_for_feature_and_release_hotfix
+        run: | 
+          first_word=$(echo ${{ github.ref_name }} | awk -F/ '{print $1}')
+          echo "BRANCH_NAME=${first_word}" >> $GITHUB_ENV
+          echo $BRANCH_NAME
+
+      - name: helm deploy
+        id: check_branch_for_feature_and_release_hotfix_based_on_first_value
+        if: env.BRANCH_NAME != 'feature' && env.BRANCH_NAME != 'release' && env.BRANCH_NAME != 'hotfix'
+        run: |
+          This Branch is Not statring with feature or Release or hotfix 
+          echo "Exiting!!"
+          exit 0;
