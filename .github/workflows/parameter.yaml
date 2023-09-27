@@ -11,10 +11,9 @@ name: dashboard-api-build-and-deploy-github-actions-flow
 jobs:
   dashboard_api_build_and_push_to_ECR:
     name: build and push to ECR dashboard_api
-    runs-on: zluri-self-hosted-iam-role
+    runs-on: ubuntu
 
     steps:
-
       - name: Check Branch Name for feature and  release
         id: check_branch_for_feature_and_release_hotfix
         run: | 
