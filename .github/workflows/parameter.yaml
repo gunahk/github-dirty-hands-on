@@ -1,17 +1,18 @@
-name: My GitHub Action
+name: Manual Workflow Trigger
 
 on:
   workflow_dispatch:
     inputs:
-      param1:
-        description: 'Choose an option: option1, option2, option3'
+      branch_name:
+        description: 'Branch name to check out'
         required: true
-        default: 'default_value'
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check parameter value
-        run: echo "The value of param1 is ${{ github.event.inputs.param1 }} "
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.branch_name }}
