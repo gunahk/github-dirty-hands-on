@@ -20,11 +20,21 @@ jobs:
           first_word=$(echo ${{ github.ref_name }} | awk -F/ '{print $1}')
           echo "BRANCH_NAME=${first_word}" >> $GITHUB_ENV
           echo $BRANCH_NAME
-
-      - name: helm deploy
-        id: check_branch_for_feature_and_release_hotfix_based_on_first_value
-        if: env.BRANCH_NAME != 'feature' && env.BRANCH_NAME != 'release' && env.BRANCH_NAME != 'hotfix'
+          
+      - name: helm delete
+        id: helm_delete_api
         run: |
-          This Branch is Not statring with feature or Release or hotfix 
-          echo "Exiting!!"
-          exit 0;
+          if [[  "${{ github.ref_name }}" =~ 'main/' ]]; then
+            feature_name=$(echo ${{ github.ref_name }}  | cut -d'/' -f2)
+            echo $feature_name
+            # Change helm name, namespace, Autoscalling and Endpoint
+            HELM_NAME=dev-${feature_name}-helm
+            HELM_NAMESPACE=dev-${feature_name}-ns
+          else [[  "${{ github.ref_name }}" =~ 'release/' ]]; then
+            release_name=$(echo ${{ github.ref_name }}  | cut -d'/' -f2)
+            echo $release_name
+            # Change helm name, namespace, Autoscalling and Endpoint
+            HELM_NAME=dev-${release_name}-helm
+            HELM_NAMESPACE=dev-${feature_name}-ns
+          fi
+          helm uninstall  ${HELM_NAME} -n ${HELM_NAMESPACE}
