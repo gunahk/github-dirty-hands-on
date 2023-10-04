@@ -30,7 +30,7 @@ jobs:
             # Change helm name, namespace, Autoscalling and Endpoint
             HELM_NAME=dev-${feature_name}-helm
             HELM_NAMESPACE=dev-${feature_name}-ns
-          else [  "${{ github.ref_name }}" =~ 'release/' ]; then
+          elif [  "${{ github.ref_name }}" =~ 'release/' ]; then
             release_name=$(echo ${{ github.ref_name }}  | cut -d'/' -f2)
             echo $release_name
             # Change helm name, namespace, Autoscalling and Endpoint
