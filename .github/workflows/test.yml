@@ -17,6 +17,9 @@ jobs:
         first_word=$(echo ${{ github.ref_name }} | awk -F/ '{print $1}')
         echo "BRANCH_NAME=${first_word}" >> $GITHUB_ENV
         echo $BRANCH_NAME
+        echo "${{ toJSON(github.event.inputs) }}"
+
+         
     - name: Run Step Conditionally
       run: echo "This step runs when the branch doesn't match feature/* or release/*"
       if:  env.BRANCH_NAME != 'feature' && env.BRANCH_NAME != 'release'
