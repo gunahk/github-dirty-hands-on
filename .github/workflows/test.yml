@@ -3,24 +3,12 @@ name: Conditional Step
 on:
   push:
     branches:
-      - feature/*
       - main
 
 jobs:
-  conditional_step:
-    runs-on: ubuntu-latest
-    
+  simple-test:
+    # if affected branch is 'main' then runs on 'prod-lambda-runner' else dev runners
+    runs-on: ${{ github.ref_name == 'main' && 'prod-lambda-runner' || fromJSON('["zluri-self-hosted-iam-role"]') }}
     steps:
-    - name: Check Branch Name
-      id: check_branch
-      run: | 
-        first_word=$(echo ${{ github.ref_name }} | awk -F/ '{print $1}')
-        echo "BRANCH_NAME=${first_word}" >> $GITHUB_ENV
-        echo $BRANCH_NAME
-        echo "${{ toJSON(github.event.inputs) }}"
-        echo "${{ github.ref_name }}"
-
-         
-    - name: Run Step Conditionally
-      run: echo "This step runs when the branch doesn't match feature/* or release/*"
-      if:  env.BRANCH_NAME != 'feature' && env.BRANCH_NAME != 'release'
+      - name: simple evaluation on test
+        run: echo "runs"
