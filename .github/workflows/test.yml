@@ -18,6 +18,7 @@ jobs:
         echo "BRANCH_NAME=${first_word}" >> $GITHUB_ENV
         echo $BRANCH_NAME
         echo "${{ toJSON(github.event.inputs) }}"
+        echo "${{ github.ref_name }}"
 
          
     - name: Run Step Conditionally
