@@ -8,7 +8,7 @@ on:
 jobs:
   simple-test:
     # if affected branch is 'main' then runs on 'prod-lambda-runner' else dev runners
-    runs-on: ${{ github.ref_name == 'main' && 'prod-lambda-runner' || fromJSON('["zluri-self-hosted-iam-role"]') }}
+    runs-on: ${{ github.ref_name != 'main' && 'prod-cd-deploy' || 'zluri-self-hosted-iam-role' }}
     steps:
       - name: simple evaluation on test
         run: echo "runs"
