@@ -1,29 +1,48 @@
-name: Node.js Build and Test
+name: Your Workflow Name
 
 on:
   push:
     branches:
-      - main
+      - dev
+      - prod
 
 jobs:
-  build:
+  job-dev-1:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [10, 12, 14, 16]
+    if: github.ref == 'refs/heads/main'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
+      # Add steps for job on dev branch
 
-    - name: Install dependencies
-      run: npm install
+  job-dev-2:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev'
 
-    - name: Build and test
-      run: npm test
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      # Add steps for another job on dev branch
+
+  job-prod-1:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/prod'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      # Add steps for job on prod branch, common with dev
+
+  job-prod-2:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/prod'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      # Add steps for another job on prod branch, additional to dev
