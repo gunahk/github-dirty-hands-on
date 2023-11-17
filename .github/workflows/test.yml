@@ -1,4 +1,4 @@
-name: Conditional Step
+name: Node.js Build and Test
 
 on:
   push:
@@ -6,9 +6,24 @@ on:
       - main
 
 jobs:
-  simple-test:
-    # if affected branch is 'main' then runs on 'prod-lambda-runner' else dev runners
-    runs-on: ${{ github.ref_name == 'main' && 'prod-cd-deploy' || 'zluri-self-hosted-iam-role' }}
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [10, 12, 14, 16]
+
     steps:
-      - name: simple evaluation on test
-        run: echo "runs"
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build and test
+      run: npm test
