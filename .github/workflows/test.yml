@@ -8,11 +8,9 @@ on:
 
 jobs:
   job-prod-2:
-    runs-on: ${{ github.ref_name == 'feature/*' && 'prod-cd-deploy' || 'zluri-self-hosted-iam-role' }}
-
+    runs-on: ${{ contains(github.ref, 'feature/') && 'prod-cd-deploy' || 'zluri-self-hosted-iam-role' }}
     steps:
       - name: Set env to deploy-develop Environment
-        if: contains(github.ref, 'feature/')
         run: |
           echo "exute"
 
