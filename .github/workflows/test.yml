@@ -8,7 +8,14 @@ on:
 
 jobs:
   job-prod-2:
-    runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'feature/*' && 'prod-cd-deploy' || 'zluri-self-hosted-iam-role' }}
+    runs-on: ${{ startsWith(github.ref, 'refs/heads/release') || startsWith(github.ref, 'refs/heads/hotfix') && 'self-hosted-runner' || 'cd-deploy' }}
+    steps:
+      - name: Echo Inputs
+        env:
+          REF: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+        run: |
+          # Export this out so others can use it
+          echo "REF=${REF}" >> $GITHUB_ENV
+
 
 
