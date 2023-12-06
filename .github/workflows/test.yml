@@ -8,10 +8,10 @@ on:
 
 jobs:
   job-prod-2:
-    runs-on: ${{ startsWith(github.ref, 'refs/heads/feature') || startsWith(github.ref, 'refs/heads/hotfix') && 'self-hosted-runner' || 'cd-deploy' }}
+    runs-on: ${{ (startsWith(github.ref, 'refs/heads/feature') || startsWith(github.ref, 'refs/heads/hotfix')) && 'runner' || 'cd-deploy' }}
+
     steps:
       - name: Set env to deploy-develop Environment
         run: |
           echo "exuteasdf"
-
 
