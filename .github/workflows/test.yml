@@ -1,6 +1,13 @@
 on:
   pull_request:
-    types: closed
+    types: [closed]
+    branches: 
+    - 'main'
+    - '!master'
+    - '!develop'
+    - '/feature/*'
+    - '/hotfix/*'
+    - '/release/*'
     
 
 name: Delete Environment
