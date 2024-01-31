@@ -1,22 +1,27 @@
-name: Conditional Step
-
 on:
-  push:
-    branches:
-      - feature/*
-      - main
+  pull_request:
+    types: closed
+    branches: 
+    - '!manster'
+    - '!develop'
+    - '/feature/*'
+    - '/hotfix/*'
+    - '/release/*'
+    
+
+name: Delete Environment
+run-name: Delete environment for branch ${{ github.event.pull_request && github.head_ref || github.ref_name }} by ${{ github.actor }}
 
 jobs:
-  conditional_step:
-    runs-on: ubuntu-latest
-    
+  environment_delete:
+    name: Delete Environment
+    runs-on: ubuntu
+
     steps:
-    - name: Check Branch Name
-      id: check_branch
-      run: | 
-        first_word=$(echo ${{ github.ref_name }} | awk -F/ '{print $1}')
-        echo "BRANCH_NAME=${first_word}" >> $GITHUB_ENV
-        echo $BRANCH_NAME
-    - name: Run Step Conditionally
-      run: echo "This step runs when the branch doesn't match feature/* or release/*"
-      if:  env.BRANCH_NAME != 'feature' && env.BRANCH_NAME != 'release'
+      - name: Echo Inputs
+        env:
+          REF: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+        run: |
+          # Export this out now so that others can use it
+          echo "testing"
+          echo $REF

@@ -1,17 +1,41 @@
-name: My GitHub Action
-
 on:
   workflow_dispatch:
     inputs:
       param1:
-        description: 'Choose an option: option1, option2, option3'
+        description: 'please select Branch and write Something below to Triggger'
         required: true
         default: 'default_value'
 
+name: dashboard-api-build-and-deploy-github-actions-flow
+
 jobs:
-  build:
+  dashboard_api_build_and_push_to_ECR:
+    name: build and push to ECR dashboard_api
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check parameter value
-        run: echo "The value of param1 is ${{ github.event.inputs.param1 }} "
+      - name: Check Branch Name for feature and  release
+        id: check_branch_for_feature_and_release_hotfix
+        run: | 
+          first_word=$(echo ${{ github.ref_name }} | awk -F/ '{print $1}')
+          echo "BRANCH_NAME=${first_word}" >> $GITHUB_ENV
+          echo $BRANCH_NAME
+          
+      - name: helm delete
+        id: helm_delete_api
+        run: |
+          set -vv
+          if [[ "${{ github.ref_name }}" =~ 'main/' ]]; then
+            feature_name=$(echo ${{ github.ref_name }}  | cut -d'/' -f2)
+            echo $feature_name
+            # Change helm name, namespace, Autoscalling and Endpoint
+            HELM_NAME=dev-${feature_name}-helm
+            HELM_NAMESPACE=dev-${feature_name}-ns
+          elif [[  "${{ github.ref_name }}" =~ 'release/' ]]; then
+            release_name=$(echo ${{ github.ref_name }}  | cut -d'/' -f2)
+            echo $release_name
+            # Change helm name, namespace, Autoscalling and Endpoint
+            HELM_NAME=dev-${release_name}-helm
+            HELM_NAMESPACE=dev-${feature_name}-ns
+          fi        
+          helm uninstall  ${HELM_NAME} -n ${HELM_NAMESPACE}
