@@ -1,14 +1,13 @@
 on:
   pull_request:
-    types: closed
-    branches: 
-    - '!manster'
+    types: [closed]
+    branches:
+    - '!main'
     - '!develop'
     - '/feature/*'
     - '/hotfix/*'
     - '/release/*'
     
-
 name: Delete Environment
 run-name: Delete environment for branch ${{ github.event.pull_request && github.head_ref || github.ref_name }} by ${{ github.actor }}
 
