@@ -1,14 +1,27 @@
-name: Your Workflow Name
-
 on:
-  push:
-    branches:
-      - feature/*
-      - main
+  pull_request:
+    types: closed
+    branches: 
+    - '!manster'
+    - '!develop'
+    - '/feature/*'
+    - '/hotfix/*'
+    - '/release/*'
+    
+
+name: Delete Environment
+run-name: Delete environment for branch ${{ github.event.pull_request && github.head_ref || github.ref_name }} by ${{ github.actor }}
 
 jobs:
-  job-prod-2:
-    runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'feature/*' && 'prod-cd-deploy' || 'zluri-self-hosted-iam-role' }}
+  environment_delete:
+    name: Delete Environment
+    runs-on: ubuntu
 
-
+    steps:
+      - name: Echo Inputs
+        env:
+          REF: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+        run: |
+          # Export this out now so that others can use it
+          echo "testing"
+          echo $REF
