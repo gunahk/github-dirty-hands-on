@@ -1,12 +1,31 @@
-on:
-  pull_request:
-    types: [closed]
-    branches:
-    - '!main'
-    - '!develop'
-    - '/feature/*'
-    - '/hotfix/*'
-    - '/release/*'
+workflow_dispatch:
+     inputs:
+      teamName:
+        type: choice
+        description: "Supported Teams"
+        required: true
+        default: 'HackRockAthon'
+        options:
+              - HackRockAThon
+              - HeWasNumber1
+              - AccountingSucks
+      xmlTestSuite:
+         type: filterChoice
+         description: 'XML Test Suite'
+         required: true
+         default: ''
+         dependsOn: teamName
+         options:
+                optionsFor: HackRockAThon
+                    - SQLInjection.xml
+                    - BlackBox.xml
+                 optionsFor: HeWasNumber1
+                    - smoke.xml
+                    - regression.xml
+                    - sanity.xml
+                 optionsFor: AccountingSucks
+                    - InvoiceChecks.xml
+                    - PricingChecks.xml
     
 name: Delete Environment
 run-name: Delete environment for branch ${{ github.event.pull_request && github.head_ref || github.ref_name }} by ${{ github.actor }}
