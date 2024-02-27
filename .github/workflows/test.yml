@@ -6,9 +6,9 @@ workflow_dispatch:
         required: true
         default: 'HackRockAthon'
         options:
-              - HackRockAThon
-              - HeWasNumber1
-              - AccountingSucks
+              - 1
+              - 2
+              - 3
       xmlTestSuite:
          type: filterChoice
          description: 'XML Test Suite'
@@ -16,16 +16,16 @@ workflow_dispatch:
          default: ''
          dependsOn: teamName
          options:
-                optionsFor: HackRockAThon
-                    - SQLInjection.xml
-                    - BlackBox.xml
-                 optionsFor: HeWasNumber1
-                    - smoke.xml
-                    - regression.xml
-                    - sanity.xml
-                 optionsFor: AccountingSucks
-                    - InvoiceChecks.xml
-                    - PricingChecks.xml
+           optionsFor: 1
+               - SQLInjection.xml
+               - BlackBox.xml
+            optionsFor: 2
+               - smoke.xml
+               - regression.xml
+               - sanity.xml
+            optionsFor: 3
+               - InvoiceChecks.xml
+               - PricingChecks.xml
     
 name: Delete Environment
 run-name: Delete environment for branch ${{ github.event.pull_request && github.head_ref || github.ref_name }} by ${{ github.actor }}
