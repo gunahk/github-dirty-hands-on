@@ -26,7 +26,7 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: |
           echo "$GITHUB_CONTEXT"
-          result=$(echo "$GITHUB_CONTEXT" | jq -r '.event.commits[] | select(.distinct == true) | .message' | grep -oE 'Merge pull request #[0-9]+ from [^/]+/[^"]+' | tail -n 1 | awk '{print $NF}' | cut -d "/" -f 2)
+          result=$(echo "$GITHUB_CONTEXT" | jq -r '.event.commits[] | select(.distinct == true) | .message' | capture("Merge pull request #\\d+ from (?<branch>.+)$") | .branch')
           echo $result
           echo "Testing"
           
