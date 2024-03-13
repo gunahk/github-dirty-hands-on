@@ -28,4 +28,5 @@ jobs:
           echo "$GITHUB_CONTEXT"
           result=$(echo "$json_data" | jq -r '.event.commits[] | select(.distinct == true) | .message' | grep -oE 'Merge pull request #[0-9]+ from [^/]+/[^"]+' | tail -n 1 )
           echo $result
+          
           echo "$result | awk '{print $NF}' | cut -d "/" -f 2"
