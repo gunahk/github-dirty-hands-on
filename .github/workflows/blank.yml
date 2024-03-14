@@ -8,6 +8,11 @@ on:
   push:
     branches: [ "main" ]
 
+concurrency:
+  group: dashboard-api
+  cancel-in-progress: true
+  limit: 1
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
@@ -29,4 +34,5 @@ jobs:
           result=$(echo "$GITHUB_CONTEXT" | jq -r '.event.commits[] | select(.distinct == true) | .message' | grep -oE 'Merge pull request #[0-9]+ from [^/]+/[^"]+' | tail -n 1 | awk '{print $NF}' | cut -d "/" -f 2)
           echo $result
           echo "Testing"
+          sleep 10000
           
