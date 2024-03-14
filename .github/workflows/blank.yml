@@ -8,31 +8,27 @@ on:
   push:
     branches: [ "main" ]
 
-concurrency:
-  group: dashboard-api
-  cancel-in-progress: true
-  limit: 1
-
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    concurrency:
+      group: example-group
+      cancel-in-progress: true
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
-
       - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
         run: |
-          echo "$GITHUB_CONTEXT"
-          result=$(echo "$GITHUB_CONTEXT" | jq -r '.event.commits[] | select(.distinct == true) | .message' | grep -oE 'Merge pull request #[0-9]+ from [^/]+/[^"]+' | tail -n 1 | awk '{print $NF}' | cut -d "/" -f 2)
-          echo $result
-          echo "Testing"
           sleep 10000
-          
+  build2:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    concurrency:
+      group: example-group
+      cancel-in-progress: true
+    steps:
+      - name: Dump GitHub context
+        run: |
+          sleep 10000
+
