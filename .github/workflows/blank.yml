@@ -18,25 +18,31 @@ jobs:
     if: ${{ github.run_number % 5 == 2 }}  # Runs if run number modulo 5 is 2
     steps:
       - name: Step 1 for Job 2
-        run: echo "This is job 2"
+        run: | 
+          echo "IMAGE_TAG=23" >> ${GITHUB_OUTPUT}
+
+    outputs:
+      IMAGE_TAG: ${{ steps.push-image.outputs.IMAGE_TAG }}
 
   job3:
     runs-on: ubuntu-latest
-    if: ${{ github.run_number % 5 == 3 }}  # Runs if run number modulo 5 is 3
+    needs: job2
     steps:
       - name: Step 1 for Job 3
-        run: echo "This is job 3"
+        run: | 
+          echo ${GITHUB_OUTPUT}
+          
 
   job4:
     runs-on: ubuntu-latest
-    if: ${{ github.run_number % 5 == 4 }}  # Runs if run number modulo 5 is 4
+    needs: job3
     steps:
       - name: Step 1 for Job 4
-        run: echo "This is job 4"
+        run: echo $IMAGE_TAG
 
   job5:
     runs-on: ubuntu-latest
-    if: ${{ github.run_modulo == 5 }}  # Runs if run number modulo 5 is 5
+    needs: job4
     steps:
       - name: Step 1 for Job 5
         run: echo "This is job 5"
