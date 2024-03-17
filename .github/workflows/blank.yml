@@ -47,4 +47,7 @@ jobs:
   job5:
     runs-on: ubuntu-latest
     if: ${{ needs.job_selector.outputs.job_number == '5' }}
+    steps:
+      - name: Step 1 for Job 4
+        run: echo "This is job 4"
    
