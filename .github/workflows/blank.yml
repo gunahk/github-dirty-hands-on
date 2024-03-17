@@ -14,9 +14,9 @@ jobs:
 
   job2:
     runs-on: ubuntu-latest
-    id: push-image
     steps:
       - name: Step 1 for Job 2
+        id: push-image
         run: | 
           echo "IMAGE_TAG=23" >> ${GITHUB_OUTPUT}
 
