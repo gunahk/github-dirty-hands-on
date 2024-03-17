@@ -25,7 +25,8 @@ jobs:
 
   job3:
     runs-on: ubuntu-latest
-    needs: job2
+    needs: 
+      - job2
     steps:
       - name: Step 1 for Job 3
         env:
@@ -36,7 +37,9 @@ jobs:
 
   job4:
     runs-on: ubuntu-latest
-    needs: job3
+    needs: 
+      - job2
+      - job3
     steps:
       - name: Step 1 for Job 4
         env:
@@ -47,7 +50,9 @@ jobs:
 
   job5:
     runs-on: ubuntu-latest
-    needs: job4
+    needs: 
+      - job4
+      - job2
     steps:
       - name: Step 1 for Job 5
         env:
