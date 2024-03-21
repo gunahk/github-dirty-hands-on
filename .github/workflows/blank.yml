@@ -1,3 +1,5 @@
+name: testing
+
 on:
   workflow_dispatch:
     inputs:
@@ -37,15 +39,19 @@ jobs:
           echo "master"
           echo $environment
           echo $image
+          key=value
+          echo "key1=${key}" >> $GITHUB_ENV
 
       - name: Summary
         env:
           image: ${{ github.event.inputs.image }}
           environment: ${{ github.event.inputs.environment }}
           acter: ${{ github.actor }}
+          key: ${{ env.key1 }}
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<EOF
           ### Deleted Environment:
           **Environment:** $environment
           **image:** $image
           **acter:** $acter
+          **key:** $key
