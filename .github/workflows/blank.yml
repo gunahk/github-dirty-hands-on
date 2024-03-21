@@ -1,5 +1,3 @@
-name: Single Job Workflow
-
 on:
   workflow_dispatch:
     inputs:
