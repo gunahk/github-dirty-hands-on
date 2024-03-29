@@ -1,57 +1,34 @@
 name: testing
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        type: choice
-        description: select the environment
-        options: 
-        - develop
-        - master
-      image:
-        description: 'Please check the dashboard app image tag and paste here'
-        required: true
+  push:
+    branches:
+      - main
 
 jobs:
   master_dashboard_app_deploy_to_EKS_Cluster:
     name: fasdf
     runs-on: ubuntu-latest
     steps:
-      - name: Load values for 'develop' environment
-        if: ${{ github.event.inputs.environment == 'develop' }}
-        env:
-          image: ${{ github.event.inputs.image }}
-          environment: ${{ github.event.inputs.environment }}
-          acter: ${{ github.actor }}
+      - name: Semantic Versing of Tag based on the pull request Branch Name
+        id: semantic-versing  
         run: |
-          # Switch to AWS based on environments
-          echo "I AM IN SAME AWS ACCOUNT AS GITHUB ACTIONS"
-
-      - name: Load values for 'develop' environment
-        if: ${{ github.event.inputs.environment == 'master' }}
-        env:
-          image: ${{ github.event.inputs.image }}
-          environment: ${{ github.event.inputs.environment }}
-          acter: ${{ github.actor }}
-        run: |
-          # Switch to AWS based on environments
-          echo "master"
-          echo $environment
-          echo $image
-          key=value
-          echo "key1=${key}" >> $GITHUB_ENV
-
-      - name: Summary
-        env:
-          image: ${{ github.event.inputs.image }}
-          environment: ${{ github.event.inputs.environment }}
-          acter: ${{ github.actor }}
-          key: ${{ env.key1 }}
-        run: |
-          cat >> $GITHUB_STEP_SUMMARY <<EOF
-          ### Deleted Environment:
-          **Environment:** $environment
-          **image:** $image
-          **acter:** $acter
-          **key:** $key
+          # Input base_merge_ref
+          base_merge_ref=$(echo "$GITHUB_CONTEXT" | jq -r '.event.commits[] | select(.distinct == true) | .message' | grep -oE 'Merge pull request #[0-9]+ from [^/]+/[^"]+' | tail -n 1 | awk '{print $NF}' | cut -d "/" -f 2)
+          echo $base_merge_ref
+          # Check base_merge_ref and update semantic version accordingly
+          if [ "$base_merge_ref" == "release" ]; then
+              
+              echo "$base_merge_ref hotfix"
+          elif [ "$base_merge_ref" == "feature" ]; then
+              echo "$base_merge_ref hotfix"
+          elif [ "$base_merge_ref" == "hotfix" ]; then
+              echo "$base_merge_ref hotfix"
+          else
+              # Increment patch version
+              echo "Increment patch version"
+          fi
+          echo "Image tag Formate is ${latest_image_tag}"
+          # Image tag format
+          echo "IMAGE_TAG=${latest_image_tag}" >> $GITHUB_ENV
+  
