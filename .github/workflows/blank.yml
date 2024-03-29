@@ -3,7 +3,7 @@ name: Verify Merge from Develop
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   verify-merge:
@@ -17,7 +17,7 @@ jobs:
       - name: Verify Merge from Develop
         run: |
           # Check if the push event was triggered by a merge from develop
-          if git log --merges --pretty=%P -n 1 "${{ github.event.before }}".."${{ github.sha }}" | grep -q "refs/heads/gunaasd"; then
+          if git log --merges --pretty=%P -n 1 "${{ github.event.before }}".."${{ github.sha }}" | grep -q "refs/heads/gunaasd12"; then
             echo "This push was a merge from develop to master."
           else
             echo "This push was not a merge from develop to master."
