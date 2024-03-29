@@ -9,6 +9,8 @@ jobs:
   master_dashboard_app_deploy_to_EKS_Cluster:
     name: fasdf
     runs-on: ubuntu-latest
+    env:
+      GITHUB_CONTEXT: ${{ toJson(github) }}
     steps:
       - name: Semantic Versing of Tag based on the pull request Branch Name
         id: semantic-versing  
