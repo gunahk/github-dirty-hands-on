@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3  # Checkout the repository
 
-      - name: Get source branch name
+      - name: Get source branch name k
         run: |
           source_branch=$(git merge-base main HEAD)
           echo "Source branch for this merge: $source_branch"
