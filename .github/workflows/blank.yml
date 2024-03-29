@@ -15,9 +15,8 @@ jobs:
       - name: Semantic Versing of Tag based on the pull request Branch Name
         id: semantic-versing  
         run: |
-
           # Check if the push event was triggered by a merge from develop
-          if [ "${{ github.event.base_ref }}" = "refs/heads/develop" ]; then
+          if git log --merges --pretty=%P -n 1 "${{ github.event.before }}".."${{ github.event.after }}" | grep -q "refs/heads/develop"; then
             echo "This push was a merge from develop to master."
           else
             echo "This push was not a merge from develop to master."
