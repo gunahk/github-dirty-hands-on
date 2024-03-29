@@ -1,24 +1,23 @@
-name: Verify Merge from Develop
-
 on:
   push:
     branches:
       - main
 
 jobs:
-  verify-merge:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0  # Fetch all history
+  verify_source_branch:
+    runs-on: ubuntu-latest  # Or your preferred runner
 
-      - name: Verify Merge from Develop
+    steps:
+      - uses: actions/checkout@v3  # Checkout the repository
+
+      - name: Get source branch name
         run: |
-          # Check if the push event was triggered by a merge from develop
-          if git log --merges --pretty=%P -n 1 "${{ github.event.before }}".."${{ github.sha }}" | grep -q "refs/heads/gunaasd12"; then
-            echo "This push was a merge from develop to master."
+          source_branch=$(git merge-base main HEAD)
+          echo "Source branch for this merge: $source_branch"
+
+          if [[ "$source_branch" == "refs/heads/develop" ]]; then
+              echo "Successfully merged from develop branch!"
           else
-            echo "This push was not a merge from develop to master."
+              echo "This merge originated from branch: $source_branch"
+              # Add additional steps here if you want to perform actions based on the source branch
           fi
