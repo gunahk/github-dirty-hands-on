@@ -22,7 +22,7 @@ jobs:
             echo "This push was not a merge from develop to master."
           fi
         
-          # Input base_merge_ref
+
           base_merge_ref=$(echo "$GITHUB_CONTEXT" | jq -r '.event.commits[] | select(.distinct == true) | .message' | grep -oE 'Merge pull request #[0-9]+ from [^/]+/[^"]+' | tail -n 1 | awk '{print $NF}' | cut -d "/" -f 2)
           echo "$base_merge_ref from message" 
           echo "$GITHUB_CONTEXT" 
@@ -32,14 +32,12 @@ jobs:
           echo "$GITHUB_CONTEXT" | jq -r '.event.commits[] | select(.distinct == true) | .message'
           # Check base_merge_ref and update semantic version accordingly
           if [ "$base_merge_ref" == "release" ]; then
-              
               echo "$base_merge_ref release"
           elif [ "$base_merge_ref" == "feature" ]; then
               echo "$base_merge_ref feature "
           elif [ "$base_merge_ref" == "hotfix" ]; then
               echo "$base_merge_ref hotfix"
           else
-              # Increment patch version
               echo "Increment patch version"
           fi
           echo "Image tag Formate is ${latest_image_tag}"
