@@ -38,7 +38,6 @@ jobs:
           elif [ "$base_merge_ref" == "hotfix" ]; then
               echo "$base_merge_ref hotfix"
           else
-              # Increment patch version
               echo "Increment patch version"
           fi
           echo "Image tag Formate is ${latest_image_tag}"
