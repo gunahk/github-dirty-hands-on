@@ -32,7 +32,6 @@ jobs:
           echo "$GITHUB_CONTEXT" | jq -r '.event.commits[] | select(.distinct == true) | .message'
           # Check base_merge_ref and update semantic version accordingly
           if [ "$base_merge_ref" == "release" ]; then
-              
               echo "$base_merge_ref release"
           elif [ "$base_merge_ref" == "feature" ]; then
               echo "$base_merge_ref feature "
