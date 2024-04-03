@@ -9,11 +9,11 @@ jobs:
   master_dashboard_app_deploy_to_EKS_Cluster:
     name: asdfasdfadsfasfasdfa
     runs-on: ubuntu-latest
-    env:
-      GITHUB_CONTEXT: ${{ toJson(github) }}
     steps:
       - name: Semantic Versing of Tag based on the pull request Branch Name
         id: semantic-versing  
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
         run: |
           # Check if the push event was triggered by a merge from develop
           if git log --merges --pretty=%P -n 1 "${{ github.event.before }}".."${{ github.event.after }}" | grep -q "refs/heads/develop"; then
