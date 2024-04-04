@@ -32,7 +32,7 @@ jobs:
           else
             echo "Endpoint $endpoint is not valid please check and Enter the correct API URL"
             echo "Exiting!!"
-            exit 0
+            exit 1
           fi
           echo "contine"
 
