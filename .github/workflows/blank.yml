@@ -1,9 +1,13 @@
 name: testing
-
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      API_ENDPOINT_WITH_HTTPS:
+        description: HTTPS Endpoint of api for release please use https://api-release.zluri.com or https://api-hotfix.zluri.com or https://api.zluri.com
+        required: true
+        default: https://api.zluri.com
+
+run-name: Deploying to environment for branch ${{ github.ref_name }} by ${{ github.actor }}
 
 jobs:
   master_dashboard_app_deploy_to_EKS_Cluster:
