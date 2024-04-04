@@ -22,35 +22,23 @@ jobs:
     steps:
       - name: Semantic Versing of Tag based on the pull request Branch Name
         id: semantic-versing  
+        continue-on-error: false 
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
+          endpoint: ${{ inputs.API_ENDPOINT_WITH_HTTPS }}
         run: |
-          # Check if the push event was triggered by a merge from develop
-          if git log --merges --pretty=%P -n 1 "${{ github.event.before }}".."${{ github.event.after }}" | grep -q "refs/heads/develop"; then
-            echo "This push was a merge from develop to master."
+          if [[ "$endpoint" == "https://api-hotfix.zluri.com" || "$endpoint" == "https://api.zluri.com" || "$endpoint" == "https://api-release.zluri.com" ]]; then
+            echo "Endpoint $endpoint is valid."
           else
-            echo "This push was not a merge from develop to master."
+            echo "Endpoint $endpoint is not valid please check and Enter the correct API URL"
+            echo "Exiting!!"
+            exit 0
           fi
-        
+          echo "contine"
 
-          base_merge_ref=$(echo "$GITHUB_CONTEXT" | jq -r '.event.commits[] | select(.distinct == true) | .message' | grep -oE 'Merge pull request #[0-9]+ from [^/]+/[^"]+' | tail -n 1 | awk '{print $NF}' | cut -d "/" -f 2)
-          echo "$base_merge_ref from message" 
-          echo "$GITHUB_CONTEXT" 
-          echo "======================"
-          echo "$GITHUB_CONTEXT" | jq -r '.event.commits[]'
-          echo "======================"
-          echo "$GITHUB_CONTEXT" | jq -r '.event.commits[] | select(.distinct == true) | .message'
-          # Check base_merge_ref and update semantic version accordingly
-          if [ "$base_merge_ref" == "release" ]; then
-              echo "$base_merge_ref release"
-          elif [ "$base_merge_ref" == "feature" ]; then
-              echo "$base_merge_ref feature "
-          elif [ "$base_merge_ref" == "hotfix" ]; then
-              echo "$base_merge_ref hotfix"
-          else
-              echo "Increment patch version"
-          fi
-          echo "Image tag Formate is ${latest_image_tag}"
-          # Image tag format
-          echo "IMAGE_TAG=${latest_image_tag}" >> $GITHUB_ENV
-  
+      - name: asdfasdf Versing of Tag based on the pull request Branch Name
+        id: semantic-asdfasdf  
+        run: |
+          echo "contine"
+
+          
