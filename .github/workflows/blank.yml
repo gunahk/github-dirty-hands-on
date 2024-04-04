@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       API_ENDPOINT_WITH_HTTPS:
-        description: HTTPS Endpoint of api for release please use https://api-release.zluri.com or https://api-hotfix.zluri.com or https://api.zluri.com
+        description: HTTPS Endpoint of api for release please use \n https://api-release.zluri.com or \n https://api-hotfix.zluri.com or \n https://api.zluri.com
         required: true
         default: https://api.zluri.com
 
