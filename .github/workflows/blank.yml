@@ -6,9 +6,9 @@ on:
         description: >
           Specify the API endpoint with HTTPS protocol. 
           For release/hotfix, please use one of the following URLs: 
-            - https://api-release.guna.com
-            - https://api-hotfix.guna.com
-            - https://api.guna.com
+          https://api-release.guna.com:
+          https://api-hotfix.guna.com:
+          https://api.guna.com:
         required: true
         default: https://api.zluri.com
 
