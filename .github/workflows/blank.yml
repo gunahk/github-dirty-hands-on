@@ -6,9 +6,9 @@ on:
         description: 
           >
             for release/hotfix please use: 
-            1. https://api-release.zluri.com:
-            2. https://api-hotfix.zluri.com:
-            3. https://api.zluri.com:
+               https://api-release.zluri.com:
+               https://api-hotfix.zluri.com:
+               https://api.zluri.com:
         required: true
         default: https://api.zluri.com
 
