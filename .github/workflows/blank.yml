@@ -4,7 +4,7 @@ on:
     inputs:
       API_ENDPOINT_WITH_HTTPS:
         description: 
-          |
+          >
             HTTPS Endpoint of api 
             for release/hotfix please use
             https://api-release.zluri.com
