@@ -1,17 +1,8 @@
 name: testing
 on:
-  workflow_dispatch:
-    inputs:
-      API_ENDPOINT_WITH_HTTPS:
-        description: >
-          Specify the API endpoint with HTTPS protocol. 
-          For release/hotfix, please use one of the following URLs                  
-          https://api-release.guna.com
-          https://api-hotfix.guna.com
-          https://api.guna.com
-        required: true
-        default: https://api.zluri.com
-
+  push:
+    branches:
+      - main
 run-name: Deploying to environment for branch ${{ github.ref_name }} by ${{ github.actor }}
 
 jobs:
@@ -26,18 +17,20 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
           endpoint: ${{ inputs.API_ENDPOINT_WITH_HTTPS }}
         run: |
-          if [[ "$endpoint" == "https://api-hotfix.zluri.com" || "$endpoint" == "https://api.zluri.com" || "$endpoint" == "https://api-release.zluri.com" ]]; then
-            echo "Endpoint $endpoint is valid."
-          else
-            echo "Endpoint $endpoint is not valid please check and Enter the correct API URL"
-            echo "Exiting!!"
-            exit 1
-          fi
-          echo "contine"
-
+          exit 1;
+          
       - name: asdfasdf Versing of Tag based on the pull request Branch Name
         id: semantic-asdfasdf  
         run: |
           echo "contine"
 
-          
+
+      - name: Notify Slack Action
+        uses: ravsamhq/notify-slack-action@2.3.0
+        if: ${{ always() && github.ref_name == 'main' }}
+        with:
+          status: ${{ job.status }}
+          notify_when: 'failure'
+          notification_title: '{workflow} is failing'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_DEV }}
