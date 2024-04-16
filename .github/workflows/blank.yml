@@ -26,11 +26,10 @@ jobs:
 
 
       - name: Notify Slack Action
-        uses: ravsamhq/notify-slack-action@2.3.0
-        if: ${{ always() && github.ref_name == 'main' }}
-        with:
-          status: ${{ job.status }}
-          notify_when: 'failure'
-          notification_title: '{workflow} is failing'
+        if: ${{ always() }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_DEV }}
+        run: |
+          echo ${{ job.status }}
+          echo '${workflow} is failing'
+        
