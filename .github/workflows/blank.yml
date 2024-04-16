@@ -17,7 +17,7 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
           endpoint: ${{ inputs.API_ENDPOINT_WITH_HTTPS }}
         run: |
-          echo sdfafsd
+          exit 1
           
       - name: asdfasdf Versing of Tag based on the pull request Branch Name
         id: semantic-asdfasdf  
@@ -32,7 +32,7 @@ jobs:
         run: |
           echo ${{ job.status }}
           echo '${workflow} is failing'
-          if [ "${{ job.status }}" != "failed" ]; then
+          if [ "${{ job.status }}" != "success" ]; then
             # Run your commands here
             echo "Job failed, running recovery commands..."
           # Add your recovery commands here
