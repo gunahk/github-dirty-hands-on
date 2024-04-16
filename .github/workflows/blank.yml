@@ -34,6 +34,8 @@ jobs:
           echo '${workflow} is failing'
           if [ "${{ job.status }}" != "success" ]; then
             # Run your commands here
+            ACTIONS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "GitHub Actions URL: $ACTIONS_URL"
             echo "Job failed, running recovery commands..."
           # Add your recovery commands here
           else
