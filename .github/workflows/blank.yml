@@ -17,7 +17,7 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
           endpoint: ${{ inputs.API_ENDPOINT_WITH_HTTPS }}
         run: |
-          echi sdfafsd
+          echo sdfafsd
           
       - name: asdfasdf Versing of Tag based on the pull request Branch Name
         id: semantic-asdfasdf  
