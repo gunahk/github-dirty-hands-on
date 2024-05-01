@@ -7,11 +7,14 @@ run-name: Deploying to environment for branch ${{ github.ref_name }} by ${{ gith
 
 jobs:
   master_dashboard_app_deploy_to_EKS_Cluster:
-    uses: ./.github/workflows/reuseabllw.yaml@main
-    with: 
-      image_name: v1.2
-      tag: 1.2
-    secrets:
-      SECRET2: ${{ secrets.SECRET2}}
-      TOKEN: ${{ secrets.TOKEN}}
+    runs-on: ubuntu
+    steps:
+      - uses: actions/checkout@v3 # Necessary to access local action
+      - name: Local Action Call
+        uses: ./.github/workflows/reuseabllw.yaml@main
+        with: 
+          image_name: v1.2
+          tag: 1.2
+          SECRET2: ${{ secrets.SECRET2}}
+          TOKEN: ${{ secrets.TOKEN}}
     
