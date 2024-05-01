@@ -7,37 +7,11 @@ run-name: Deploying to environment for branch ${{ github.ref_name }} by ${{ gith
 
 jobs:
   master_dashboard_app_deploy_to_EKS_Cluster:
-    name: asdfasdfadsfasfasdfa
-    runs-on: ubuntu-latest
-    steps:
-      - name: Semantic Versing of Tag based on the pull request Branch Name
-        id: semantic-versing  
-        continue-on-error: false 
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-          endpoint: ${{ inputs.API_ENDPOINT_WITH_HTTPS }}
-        run: |
-          exit 1
-          
-      - name: asdfasdf Versing of Tag based on the pull request Branch Name
-        id: semantic-asdfasdf  
-        run: |
-          echo "contine"
-
-
-      - name: Notify Slack Action
-        if: ${{ always() }}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_DEV }}
-        run: |
-          echo ${{ job.status }}
-          echo '${workflow} is failing'
-          if [ "${{ job.status }}" != "success" ]; then
-            # Run your commands here
-            ACTIONS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            echo "GitHub Actions URL: $ACTIONS_URL"
-            echo "Job failed, running recovery commands..."
-          # Add your recovery commands here
-          else
-            echo "Job succeeded, no recovery needed."
-          fi
+    uses: .github/workflows/reuseabllw.yaml@main
+    with: 
+      image_name: v1.2
+      tag: 1.2
+    secrets:
+      SECRET2: ${{ secrets.SECRET2}}
+      TOKEN: ${{ secrets.TOKEN}}
+    
