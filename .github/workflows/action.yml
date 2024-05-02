@@ -2,4 +2,4 @@ name: Test
 on: [push]
 jobs:
   test:
-    uses: ./.github/reuseabllw/action.yml
+    uses: ./.github/reuseabllw/action.yml@main
