@@ -1,1 +1,27 @@
+name: Reusable workflow example
 
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        required: true
+        type: string
+    secrets:
+      token:
+        required: true
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set env to release Environment
+        if: contains(github.ref, 'main/')  ||  contains(github.ref, 'hotfix/')
+        run: |
+          echo "main"
+          echo ${{ secrets.SECRET2 }}
+
+      - name: Set env to release Environment
+        if: contains(github.ref, 'release/')  ||  contains(github.ref, 'hotfix/')
+        run: |
+          echo "not in main"
+          ehco ${{ secrets.SECRET1 }}
