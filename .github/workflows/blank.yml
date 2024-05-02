@@ -1,20 +1,36 @@
-name: testing
 on:
   push:
     branches:
       - main
-run-name: Deploying to environment for branch ${{ github.ref_name }} by ${{ github.actor }}
+
+name: dashboard-api-github-actions-flow
 
 jobs:
-  master_dashboard_app_deploy_to_EKS_Cluster:
+  dashboard_api_build_and_push_to_ECR:
+    name: build and push to ECR dashboard_api
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3 # Necessary to access local action
-      - name: Local Action Call
-        uses: ./.github/workflows/reuseabllw/action.yaml
-        with: 
-          image_name: v1.2
-          tag: 1.2
-          SECRET2: ${{ secrets.SECRET2}}
-          TOKEN: ${{ secrets.TOKEN}}
-    
+
+    steps:                  
+      - name: echo 
+        run: |
+          echo "asdfadsf"
+          event_name=guna
+          echo "event_name=${event_name}" >> ${GITHUB_OUTPUT}
+
+  dashboard_api_build_and_push_to_2:
+    needs: dashboard_api_build_and_push_to_ECR
+    name: build and push to ECR dashboard_api asd
+    runs-on: ubuntu-latest
+    steps:                  
+      - name: echo 
+        run: |
+          echo "asdfasdf"
+
+  dashboard_api_build_and_push_to_ECR_2:
+    name: build and push  asdf to ECR dashboard_api
+    runs-on: ubuntu-latest
+    needs: ${{ env.event_name == 'guna' ? 'dashboard_api_build_and_push_to_ECR' : 'dashboard_api_build_and_push_to_ECR, dashboard_api_build_and_push_to_2' }}
+    steps:                  
+      - name: echo 
+        run: |
+          echo "asdfadsf"
