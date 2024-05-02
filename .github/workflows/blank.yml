@@ -29,7 +29,7 @@ jobs:
   dashboard_api_build_and_push_to_ECR_2:
     name: build and push  asdf to ECR dashboard_api
     runs-on: ubuntu-latest
-    needs: ${{ github.event_name == 'pull_request' ? 'dashboard_api_build_and_push_to_ECR' : 'dashboard_api_build_and_push_to_ECR, dashboard_api_build_and_push_to_2' }}
+    needs: ${{ env.event_name == 'guna' && 'dashboard_api_build_and_push_to_ECR' || 'dashboard_api_build_and_push_to_2' }}
     steps:                  
       - name: echo 
         run: |
