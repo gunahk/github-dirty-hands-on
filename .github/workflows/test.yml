@@ -18,8 +18,8 @@ jobs:
         if: contains(github.ref, 'main/')  ||  contains(github.ref, 'hotfix/')
         run: |
           echo "main"
-          echo ${{ secrets.SECRET2 }}
-
+          echo "secrets added directly from reusable ${{ secrets.SECRET2 }}"
+          echo "secrets from main workflow secrets  ${{ inputs.config-path }}"
       - name: Set env to release Environment
         if: contains(github.ref, 'release/')  ||  contains(github.ref, 'hotfix/')
         run: |

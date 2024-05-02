@@ -12,25 +12,7 @@ jobs:
 
     steps:                  
       - name: echo 
-        run: |
-          echo "asdfadsf"
-          event_name=guna
-          echo "event_name=${event_name}" >> ${GITHUB_OUTPUT}
-
-  dashboard_api_build_and_push_to_2:
-    needs: dashboard_api_build_and_push_to_ECR
-    name: build and push to ECR dashboard_api asd
-    runs-on: ubuntu-latest
-    steps:                  
-      - name: echo 
-        run: |
-          echo "asdfasdf"
-
-  dashboard_api_build_and_push_to_ECR_2:
-    name: build and push  asdf to ECR dashboard_api
-    runs-on: ubuntu-latest
-    needs: ${{ github.event_name == 'pull_request' ? 'dashboard_api_build_and_push_to_ECR' }}
-    steps:                  
-      - name: echo 
-        run: |
-          echo "asdfadsf"
+        uses: gunahk/github-dirty-hands-on/.github/workflows/test.yml
+        with: 
+          config-path: ${{ secrets.SECRET2 }}
+          secrets: ${{ secrets.SECRET1 }}
