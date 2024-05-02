@@ -1,41 +1,28 @@
-on:
-  push:
-    branches:
-      - develop
-      - staging
-      - master
+name: Reusable workflow example
 
-name: dashboard-api-github-actions-flow
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        required: true
+        type: string
+    secrets:
+      token:
+        required: true
 
 jobs:
-  dashboard_api_build_and_push_to_ECR:
-    name: build and push to ECR dashboard_api
+  triage:
     runs-on: ubuntu-latest
-
-    steps:                  
-      - name: echo 
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set env to release Environment
+        if: contains(github.ref, 'main/')  ||  contains(github.ref, 'hotfix/')
         run: |
-          echo "asdfadsf"
-          event_name=guna
-          echo "event_name=${event_name}" >> ${GITHUB_OUTPUT}
-
-  dashboard_api_build_and_push_to_2:
-    needs: dashboard_api_build_and_push_to_ECR
-    name: build and push to ECR dashboard_api asd
-    runs-on: ubuntu-latest
-    steps:                  
-      - name: echo 
+          echo "main"
+          echo "secrets added directly from reusable ${{ secrets.SECRET2 }}"
+          echo "secrets from main workflow secrets  ${{ inputs.config-path }}"
+      - name: Set env to release Environment
+        if: contains(github.ref, 'release/')  ||  contains(github.ref, 'hotfix/')
         run: |
-          echo "asdfasdf"
-
-  dashboard_api_build_and_push_to_ECR_2:
-    name: build and push  asdf to ECR dashboard_api
-    runs-on: ubuntu-latest
-    needs: ${{ env.event_name == 'guna' ? 'dashboard_api_build_and_push_to_ECR' : 'dashboard_api_build_and_push_to_ECR, dashboard_api_build_and_push_to_2' }}
-    steps:                  
-      - name: echo 
-        run: |
-          echo "asdfadsf"
-
-
-
+          echo "not in main"
+          ehco ${{ secrets.SECRET1 }}
