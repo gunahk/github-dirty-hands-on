@@ -17,7 +17,7 @@ jobs:
           echo "asdfadsf"
           event_name=guna
           echo "event_name=${event_name}" >> ${GITHUB_OUTPUT}
-      - uses: ./.github/reuseabllw/action.yaml@main
+      - uses: ./.github/reuseabllw/action.yml@main
         with: 
           config-path: test
           secrets: ${{ secrets.SECRET2 }}
