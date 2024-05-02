@@ -13,7 +13,7 @@ jobs:
     steps:         
       - uses: actions/checkout@v3         
       - name: echo 
-        uses: ./gunahk/github-dirty-hands-on/.github/workflows/test.yml
+        uses: ./.github/workflows/test.yml
         with: 
           config-path: ${{ secrets.SECRET2 }}
           secrets: ${{ secrets.SECRET1 }}
