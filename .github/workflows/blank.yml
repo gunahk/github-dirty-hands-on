@@ -10,7 +10,8 @@ jobs:
     name: build and push to ECR dashboard_api
     runs-on: ubuntu-latest
 
-    steps:                  
+    steps:         
+      - uses: actions/checkout@v3         
       - name: echo 
         uses: ./gunahk/github-dirty-hands-on/.github/workflows/test.yml
         with: 
