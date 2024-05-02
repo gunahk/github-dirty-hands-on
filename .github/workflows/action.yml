@@ -17,7 +17,7 @@ jobs:
           echo "asdfadsf"
           event_name=guna
           echo "event_name=${event_name}" >> ${GITHUB_OUTPUT}
-      - uses: 
+      - uses: gunahk/github-dirty-hands-on/.github/reuseabllw/action.yaml
         when: 
           config-path: test
           secrets: ${{ secrets.SECRET2 }}
