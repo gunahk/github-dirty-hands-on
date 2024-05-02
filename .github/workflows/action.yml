@@ -1,23 +1,5 @@
-on:
-  push:
-    branches:
-      - main
-
-name: dashboard-api-github-actions-flow
-
+name: Test
+on: [push]
 jobs:
-  dashboard_api_build_and_push_to_ECR:
-    name: build and push to ECR dashboard_api
-    runs-on: ubuntu-latest
-
-    steps:         
-      - uses: actions/checkout@v3         
-      - name: echo 
-        run: |
-          echo "asdfadsf"
-          event_name=guna
-          echo "event_name=${event_name}" >> ${GITHUB_OUTPUT}
-      - uses: /.github/reuseabllw/action.yml@main
-        with: 
-          config-path: test
-          secrets: ${{ secrets.SECRET2 }}
+  test:
+    uses: ./.github/reuseabllw/action.yml
