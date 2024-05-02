@@ -12,7 +12,7 @@ jobs:
 
     steps:                  
       - name: echo 
-        uses: gunahk/github-dirty-hands-on/.github/workflows/test.yml
+        uses: ./gunahk/github-dirty-hands-on/.github/workflows/test.yml
         with: 
           config-path: ${{ secrets.SECRET2 }}
           secrets: ${{ secrets.SECRET1 }}
