@@ -24,13 +24,24 @@ jobs:
         id: step
         run: |
           echo "asdfasdf"
-          #echo "hotfix=false" >> ${GITHUB_OUTPUT}
+          echo "hotfix=false" >> ${GITHUB_OUTPUT}
     outputs:
       deploy-status: ${{ steps.step.outputs.hotfix }}
 
   dashboard_api_build_and_push_to_ECR_2:
     name: build and push  asdf to ECR dashboard_api
     if: needs.dashboard_api_build_and_push_to_2.outputs.deploy-status == 'true'
+    runs-on: ubuntu-latest
+    needs: 
+      - dashboard_api_build_and_push_to_2
+    steps:                  
+      - name: echo 
+        run: |
+          echo "asdfadsf"
+
+  dashboard_api_build_and_push_to_ECR_23:
+    name: build and push  asdfasdf to ECR dashboard_api
+    if: needs.dashboard_api_build_and_push_to_2.outputs.deploy-status == 'false'
     runs-on: ubuntu-latest
     needs: 
       - dashboard_api_build_and_push_to_2
