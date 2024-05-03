@@ -24,10 +24,9 @@ jobs:
         id: step
         run: |
           echo "asdfasdf"
-          echo "hotfix=true" >> $GITHUB_ENV
-          echo ${{ env.hotfix }}
+          echo "hotfix=true" >> ${GITHUB_OUTPUT}
     outputs:
-      deploy-status: false
+      deploy-status: ${{ steps.step.outputs.hotfix }}
 
   dashboard_api_build_and_push_to_ECR_2:
     name: build and push  asdf to ECR dashboard_api
