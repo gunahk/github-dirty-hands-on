@@ -30,7 +30,7 @@ jobs:
     steps:                  
       - name: echo 
         id: step
-        if: contains(github.event.pull_request.base.ref, 'main') 
+        if: contains(github.event.pull_request.base.ref, 'develop') 
         run: |
           echo "asdfasdf"
           #echo "hotfix=false" >> ${GITHUB_OUTPUT}
@@ -45,7 +45,7 @@ jobs:
       - dashboard_api_build_and_push_to_2
     steps:                  
       - name: echo 
-        if: contains(github.event.pull_request.head.ref, 'hotfix')
+        if: contains(github.event.pull_request.head.ref, 'ggg')
         run: |
           echo "asdfadsf"
 
