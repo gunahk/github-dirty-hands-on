@@ -26,7 +26,7 @@ jobs:
           echo "hotfix=true" >> $GITHUB_ENV
   dashboard_api_build_and_push_to_ECR_2:
     name: build and push  asdf to ECR dashboard_api
-    if: env.hotfix == 'true'
+    if: ${{ env.hotfix == 'true' }}
     runs-on: ubuntu-latest
     needs: 
       - dashboard_api_build_and_push_to_2
