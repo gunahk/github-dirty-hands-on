@@ -25,7 +25,7 @@ jobs:
           echo "asdfasdf"
           echo "hotfix=true" >> $GITHUB_ENV
     outputs:
-      deploy-status: true
+      deploy-status: false
 
   dashboard_api_build_and_push_to_ECR_2:
     name: build and push  asdf to ECR dashboard_api
