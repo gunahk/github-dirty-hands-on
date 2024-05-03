@@ -6,9 +6,6 @@ on:
     branches:
     - main
 
-
-name: dashboard-api-github-actions-flow
-
 jobs:
   dashboard_api_build_and_push_to_ECR:
     name: build and push to ECR dashboard_api
