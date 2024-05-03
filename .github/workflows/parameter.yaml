@@ -21,11 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:                  
       - name: echo 
+        id: step
         run: |
           echo "asdfasdf"
           echo "hotfix=true" >> $GITHUB_ENV
+          echo ${{ env.hotfix }}
     outputs:
-      deploy-status: ${{ env.hofix }}
+      deploy-status: ${{ steps.step.outputs.hotfix }}
 
   dashboard_api_build_and_push_to_ECR_2:
     name: build and push  asdf to ECR dashboard_api
