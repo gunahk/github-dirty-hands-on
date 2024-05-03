@@ -27,7 +27,7 @@ jobs:
           echo "hotfix=true" >> $GITHUB_ENV
           echo ${{ env.hotfix }}
     outputs:
-      deploy-status: ${{ steps.step.outputs.hotfix }}
+      deploy-status: true
 
   dashboard_api_build_and_push_to_ECR_2:
     name: build and push  asdf to ECR dashboard_api
