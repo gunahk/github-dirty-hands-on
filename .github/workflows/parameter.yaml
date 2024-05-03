@@ -24,7 +24,7 @@ jobs:
         id: step
         run: |
           echo "asdfasdf"
-          echo "hotfix=false" >> ${GITHUB_OUTPUT}
+          #echo "hotfix=false" >> ${GITHUB_OUTPUT}
     outputs:
       deploy-status: ${{ steps.step.outputs.hotfix }}
 
