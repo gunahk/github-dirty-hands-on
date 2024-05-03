@@ -1,7 +1,11 @@
+name: Test deployment
 on:
-  push:
+  pull_request:
+    types:
+    - closed
     branches:
-      - main
+    - main
+
 
 name: dashboard-api-github-actions-flow
 
@@ -11,10 +15,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:                  
       - name: echo 
+        id: step
         run: |
           echo "asdfadsf"
           event_name=guna
+          echo "asdfasdf"
+          echo "hotfix=true" >> ${GITHUB_OUTPUT}
           echo "event_name=${event_name}" >> ${GITHUB_OUTPUT}
+    outputs:
+      deploy-status: ${{ steps.step.outputs.hotfix }}
+
+
   dashboard_api_build_and_push_to_2:
     needs: dashboard_api_build_and_push_to_ECR
     name: build and push to ECR dashboard_api asd
@@ -22,6 +33,7 @@ jobs:
     steps:                  
       - name: echo 
         id: step
+        if: contains(github.event.pull_request.base.ref, 'main') 
         run: |
           echo "asdfasdf"
           #echo "hotfix=false" >> ${GITHUB_OUTPUT}
@@ -30,12 +42,13 @@ jobs:
 
   dashboard_api_build_and_push_to_ECR_2:
     name: build and push  asdf to ECR dashboard_api
-    if: needs.dashboard_api_build_and_push_to_2.outputs.deploy-status == 'true'
+    if: needs.dashboard_api_build_and_push_to_ECR.outputs.deploy-status == 'true'
     runs-on: ubuntu-latest
     needs: 
       - dashboard_api_build_and_push_to_2
     steps:                  
       - name: echo 
+        if: contains(github.event.pull_request.head.ref, 'hotfix')
         run: |
           echo "asdfadsf"
 
