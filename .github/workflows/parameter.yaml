@@ -19,6 +19,14 @@ jobs:
           echo "asdfasdf"
           echo "hotfix=true" >> ${GITHUB_OUTPUT}
           echo "event_name=${event_name}" >> ${GITHUB_OUTPUT}
+          
+          BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
+          if [[ "$BASE_BRANCH" =~ ^feature/ || "$BASE_BRANCH" =~ ^hotfix/ ]]; then
+            echo "Pull request is from a feature or hotfix branch."
+          else
+            echo "Pull request is not from a feature or hotfix branch."
+          fi
+
     outputs:
       deploy-status: ${{ steps.step.outputs.hotfix }}
 
