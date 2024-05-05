@@ -24,7 +24,7 @@ jobs:
           if [[ "$BASE_BRANCH" =~ ^feature/ || "$BASE_BRANCH" =~ ^hotfix/ ]]; then
             echo "Pull request is from a feature or hotfix branch."
           else
-            echo "Pull request is not from a feature or hotfix branch."
+            echo "Pull request is not from a feature or hotfix branch"
           fi
 
     outputs:
