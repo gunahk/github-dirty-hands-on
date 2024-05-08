@@ -9,7 +9,6 @@ name: Create or deploy to environment
 run-name: Deploying to environment for branch ${{ github.ref_name }} by ${{ github.actor }}
 jobs:
   dashboard_api_build_and_push_to_ECR:
-    if: ${{ github.event.pull_request.merged }}
     name: build and push to ECR dashboard_api
     runs-on: ubuntu-latest
     steps:                  
