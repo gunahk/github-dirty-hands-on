@@ -1,11 +1,12 @@
-name: Test deployment
 on:
-  pull_request:
-    types:
-    - closed
-    branches:
-    - main
+  workflow_dispatch:
+    inputs:
+      param1:
+        description: 'Please select Branch from above and leave a comment below'
+        required: true
 
+name: Create or deploy to environment
+run-name: Deploying to environment for branch ${{ github.ref_name }} by ${{ github.actor }}
 jobs:
   dashboard_api_build_and_push_to_ECR:
     if: ${{ github.event.pull_request.merged }}
@@ -20,12 +21,13 @@ jobs:
           echo "asdfasdf"
           echo "hotfix=true" >> ${GITHUB_OUTPUT}
           echo "event_name=${event_name}" >> ${GITHUB_OUTPUT}
-          
-          BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
-          if [[ "$BASE_BRANCH" =~ ^feature/ || "$BASE_BRANCH" =~ ^hotfix/ ]]; then
-            echo "Pull request is from a feature or hotfix branch."
-          else
-            echo "Pull request is not from a feature or hotfix branch"
+
+          if [[ ${{ github.ref }} == refs/heads/release/* ]]; then
+            echo "you are in loop"
+            sed -i 's/zluri-prod-backend-triggers-app:latest/zluri-prod-backend-triggers-app:release/g' values.json
+            sed -i 's/prod-backend-scripts-ecr:latest/zluri-prod-backend-triggers-app:release/g' values.json
+          elif [[ ${{ github.ref }} == refs/heads/feature/* ]]; then
+            echo "This is  not release environament os not replacing the values"
           fi
 
     outputs:
