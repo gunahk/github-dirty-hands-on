@@ -1,9 +1,11 @@
 on:
-  workflow_dispatch:
-    inputs:
-      param1:
-        description: 'Please select Branch from above and leave a comment below'
-        required: true
+  pull_request:
+    branches:
+      - develop
+      - staging
+      - master
+    types:
+      - closed
 
 name: Create or deploy to environment
 run-name: Deploying to environment for branch ${{ github.ref_name }} by ${{ github.actor }}
