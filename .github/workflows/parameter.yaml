@@ -63,7 +63,7 @@ jobs:
 
   dashboard_api_build_and_push_to_ECR_23:
     name: build and push  asdfasdf to ECR dashboard_api
-    if: needs.dashboard_api_build_and_push_to_ECR.outputs.deploy-status == 'true' &&  github.event.pull_request.base.ref == 'main'
+    if: needs.dashboard_api_build_and_push_to_ECR.outputs.deploy-status == 'true' && github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
     needs: 
       - dashboard_api_build_and_push_to_2
