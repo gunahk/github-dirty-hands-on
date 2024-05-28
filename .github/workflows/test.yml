@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - release/*
+      - feature/*
   
 jobs:
   check_pr_labels_job:
@@ -24,6 +25,7 @@ jobs:
       run: |
           echo ${{ github.ref_name }}
           if [[  "${{ github.ref_name }}" =~ 'release/' ]]; then
+            echo "release"
             release_name=$(echo ${{ github.ref_name }}  | cut -d'/' -f2)
             echo $release_name
             # Change helm name, namespace, Autoscalling and Endpoint
@@ -31,4 +33,5 @@ jobs:
             HELM_NAMESPACE=${release_name}-ns
           fi
             echo "$HELM_NAME $HELM_NAMESPACE"
+            echo "not  in release"
         
