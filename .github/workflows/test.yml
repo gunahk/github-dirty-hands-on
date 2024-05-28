@@ -24,14 +24,15 @@ jobs:
       if: contains(github.ref, 'release/')
       run: |
           echo ${{ github.ref_name }}
-          if [[  "${{ github.ref_name }}" =~ 'release/' ]]; then
+          if [[  "${{ github.ref_name }}" =~ 'feature/' ]]; then
             echo "release"
             release_name=$(echo ${{ github.ref_name }}  | cut -d'/' -f2)
             echo $release_name
             # Change helm name, namespace, Autoscalling and Endpoint
             HELM_NAME=${release_name}-helm
             HELM_NAMESPACE=${release_name}-ns
-          fi
+          else
             echo "$HELM_NAME $HELM_NAMESPACE"
+          fi
             echo "not  in release"
         
