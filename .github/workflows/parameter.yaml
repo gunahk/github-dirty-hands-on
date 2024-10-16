@@ -13,7 +13,7 @@ jobs:
     name: build and push to ECR dashboard_api
     runs-on: ubuntu-latest
     steps: 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: echo 
         id: step
