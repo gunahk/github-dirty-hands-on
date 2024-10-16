@@ -2,22 +2,23 @@ on:
   pull_request:
     branches:
       - main
-    
-    types:
-      - closed
+      - master  # Example for multiple destination branches if needed
 
-name: Create or deploy to environment
-run-name: Deploying to environment for branch ${{ github.ref_name }} by ${{ github.actor }}
 jobs:
-  dashboard_api_build_and_push_to_ECR:
-    name: build and push to ECR dashboard_api
+  checkout-destination-branch:
     runs-on: ubuntu-latest
-    steps: 
-      - uses: actions/checkout@v4
+    steps:
+      # Checkout the destination branch (target branch of the PR)
+      - name: Checkout destination branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
 
-      - name: Confirm branch
+      - name: Confirm checked-out branch
         run: |
+          echo ${{ github.base_ref }}
           echo "Checked out $(git branch --show-current)"
+          
 
       - name: echo 
         id: step
