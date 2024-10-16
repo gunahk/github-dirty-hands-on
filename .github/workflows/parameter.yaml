@@ -17,6 +17,10 @@ jobs:
         with:
           ref: 'refs/heads/main'
 
+      - name: Confirm branch
+        run: |
+          echo "Checked out $(git branch --show-current)"
+
       - name: echo 
         id: step
         run: |
