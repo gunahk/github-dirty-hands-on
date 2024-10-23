@@ -4,16 +4,24 @@ on:
       - main
       - master  # Example for multiple destination branches if needed
 
+
+
 jobs:
   checkout-destination-branch:
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged == true
+    concurrency:
+      group: ${{ github.ref }}  # Ensures that only one workflow per branch is active
+      cancel-in-progress: true  # Cancels any currently running workflow when a new one is triggered
+
+    
     steps:
       # Checkout the destination branch (target branch of the PR)
       - name: Checkout destination branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.base_ref }}
+
 
       - name: Confirm checked-out branch
         run: |
