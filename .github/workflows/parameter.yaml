@@ -3,7 +3,8 @@ on:
     branches:
       - main
       - master  # Example for multiple destination branches if needed
-
+    types:
+      - closed
 
 
 jobs:
