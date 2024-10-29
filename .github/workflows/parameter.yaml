@@ -30,7 +30,7 @@ jobs:
           echo ${{ github.base_ref }}
           echo "Checked out $(git branch --show-current)"
           ACTIONS_ACTOR=${{ github.actor }}
-          GPT_ACTOR=${{ github.event.sender.login }}"
+          GPT_ACTOR=${{ github.event.sender.login }}
           
 
       - name: echo 
