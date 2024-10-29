@@ -27,7 +27,10 @@ jobs:
       - name: Confirm checked-out branch
         run: |
           echo ${{ github.base_ref }}
+          echo ${{ github.base_ref }}
           echo "Checked out $(git branch --show-current)"
+          ACTIONS_ACTOR=${{ github.actor }}
+          GPT_ACTOR=${{ github.event.sender.login }}"
           
 
       - name: echo 
