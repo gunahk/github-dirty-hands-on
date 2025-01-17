@@ -17,4 +17,4 @@ jobs:
 
       - name: Confirm checked-out branch
         run: |
-          ls -ltra          
+          ls -ltra postgress/      
