@@ -1,10 +1,7 @@
 on:
-  pull_request:
+  push:
     branches:
       - main
-      - master  # Example for multiple destination branches if needed
-    types:
-      - closed
 
 
 jobs:
@@ -22,18 +19,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.base_ref }}
+          path: postgress
 
 
       - name: Confirm checked-out branch
         run: |
-          echo ${{ github.base_ref }}
-          echo ${{ github.base_ref }}
-          echo "Checked out $(git branch --show-current)"
-          ACTIONS_ACTOR=${{ github.actor }}
-          GPT_ACTOR=${{ github.event.sender.login }}
-          
-
-      - name: echo 
-        id: step
-        run: |
-          ls -ltra
+          ls -ltra          
