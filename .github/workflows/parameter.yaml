@@ -12,9 +12,12 @@ jobs:
       # Checkout the destination branch (target branch of the PR)
       - name: Checkout destination branch
         uses: actions/checkout@v4
-        with:
-          path: postgress
 
       - name: Confirm checked-out branch
         run: |
-          ls -ltra postgress/      
+          cd postgress  
+          ls -ltra    
+
+      - name: Confirm down strem jobs folders
+        run: |
+          ls -ltra      
