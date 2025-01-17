@@ -24,7 +24,22 @@ jobs:
           git sparse-checkout set postgress
           git pull
 
-      # Step 3: Confirm the folder is present
-      - name: List Postgress Directory
+      # Step 2: Use the postgress directory as the workspace for subsequent steps
+      - name: Run Commands in Postgress Directory
+        working-directory: ./postgress
         run: |
-          ls -ltra
+          echo "Current directory: $(pwd)"
+          ls -la
+        
+
+      - name: Run Commands in Postgress Directory
+        
+        run: |
+          echo "Current directory: $(pwd)"
+          ls -la
+
+      - name: Run Commands in Postgress Directory
+        working-directory: ./postgress
+        run: |
+          echo "Current directory: $(pwd)"
+          ls -la
