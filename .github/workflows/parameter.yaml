@@ -7,8 +7,9 @@ on:
 jobs:
   checkout-destination-branch:
     runs-on: ubuntu-latest
-    
-
+    defaults:
+     run:
+      working-directory: ./app
     steps:
       # Step 1: Checkout the repository metadata
       - name: Checkout Repository Metadata
