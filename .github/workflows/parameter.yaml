@@ -14,19 +14,6 @@ jobs:
       # Step 1: Checkout the repository metadata
       - name: Checkout Repository Metadata
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Fetch complete history to allow sparse checkout
-          persist-credentials: false # Disable credentials for security
-
-      # Step 2: Configure sparse checkout to include only the 'postgress' folder
-      - name: Configure Sparse Checkout
-        run: |
-          git sparse-checkout init --cone
-          git sparse-checkout set postgress
-          git pull
-
-      - name: Set Workspace Path
-        run: echo "POSTGRESS_PATH=$(pwd)/postgress" >> $GITHUB_ENV
 
       - name: Run Commands in Postgress Directory        
         run: |
@@ -34,7 +21,6 @@ jobs:
           ls -la
 
       - name: Run Commands in Postgress Directory
-        working-directory: ./postgress
         run: |
           echo "Current directory: $(pwd)"
           ls -la
