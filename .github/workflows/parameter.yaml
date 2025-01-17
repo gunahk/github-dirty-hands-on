@@ -24,16 +24,10 @@ jobs:
           git sparse-checkout set postgress
           git pull
 
-      # Step 2: Use the postgress directory as the workspace for subsequent steps
-      - name: Run Commands in Postgress Directory
-        working-directory: ./postgress
-        run: |
-          echo "Current directory: $(pwd)"
-          ls -la
-        
+      - name: Set Workspace Path
+        run: echo "POSTGRESS_PATH=$(pwd)/postgress" >> $GITHUB_ENV
 
-      - name: Run Commands in Postgress Directory
-        
+      - name: Run Commands in Postgress Directory        
         run: |
           echo "Current directory: $(pwd)"
           ls -la
