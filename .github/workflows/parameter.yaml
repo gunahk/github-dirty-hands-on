@@ -7,11 +7,6 @@ on:
 jobs:
   checkout-destination-branch:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
-    concurrency:
-      group: ${{ github.ref }}  # Ensures that only one workflow per branch is active
-      cancel-in-progress: true  # Cancels any currently running workflow when a new one is triggered
-
     
     steps:
       # Checkout the destination branch (target branch of the PR)
