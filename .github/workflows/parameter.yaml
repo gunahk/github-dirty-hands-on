@@ -9,15 +9,22 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # Checkout the destination branch (target branch of the PR)
-      - name: Checkout destination branch
+    steps:
+      # Step 1: Checkout the repository metadata
+      - name: Checkout Repository Metadata
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch complete history to allow sparse checkout
+          persist-credentials: false # Disable credentials for security
 
-      - name: Confirm checked-out branch
+      # Step 2: Configure sparse checkout to include only the 'postgress' folder
+      - name: Configure Sparse Checkout
         run: |
-          cd postgress  
-          ls -ltra    
+          git sparse-checkout init --cone
+          git sparse-checkout set postgress
+          git pull
 
-      - name: Confirm down strem jobs folders
+      # Step 3: Confirm the folder is present
+      - name: List Postgress Directory
         run: |
-          ls -ltra      
+          ls -ltra
