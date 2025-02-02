@@ -10,10 +10,10 @@ on:
 
 jobs:
   checkout-destination-branch:
-    runs-on: ubuntu-latest
+    runs-on: ${{ contains(github.ref, 'feature/') && 'dev-cd-deploy' || (contains(github.ref, 'release/') || contains(github.ref, 'hotfix/')) && 'prod-cd-deploy' || 'default-runner' }}
     defaults:
-     runs-on: ${{ contains(github.ref, 'feature/') && 'dev-cd-deploy' || (contains(github.ref, 'release/') || contains(github.ref, 'hotfix/')) && 'prod-cd-deploy' || 'default-runner' }}
-      working-directory: ./postgress
+      run:
+        working-directory: ./postgress
     steps:
       # Step 1: Checkout the repository metadata
       - name: Checkout Repository Metadata
