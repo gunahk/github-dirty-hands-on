@@ -2,13 +2,17 @@ on:
   push:
     branches:
       - main
+      - feature/*
+      - release/*
+      - hotfix/*
+      
 
 
 jobs:
   checkout-destination-branch:
     runs-on: ubuntu-latest
     defaults:
-     run:
+     runs-on: ${{ contains(github.ref, 'feature/') && 'dev-cd-deploy' || (contains(github.ref, 'release/') || contains(github.ref, 'hotfix/')) && 'prod-cd-deploy' || 'default-runner' }}
       working-directory: ./postgress
     steps:
       # Step 1: Checkout the repository metadata
