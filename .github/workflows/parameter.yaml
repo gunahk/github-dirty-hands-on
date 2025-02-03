@@ -1,16 +1,21 @@
 on:
-  push:
+  pull_request:
     branches:
       - main
-      - feature/*
-      - release/*
-      - hotfix/*
-      
+      - develop
+    types:
+      - closed
+  # Trigger manully
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'type any version'
+        required: true
 
 
 jobs:
-  checkout-destination-branch:
-    runs-on: ${{ contains(github.ref, 'feature/') && 'dev-cd-deploy' || (contains(github.ref, 'release/') || contains(github.ref, 'hotfix/')) && 'prod-cd-deploy' || 'default-runner' }}
+  get_deployment_details:
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./postgress
@@ -19,12 +24,18 @@ jobs:
       - name: Checkout Repository Metadata
         uses: actions/checkout@v4
 
-      - name: Run Commands in Postgress Directory        
-        run: |
-          echo "Current directory: $(pwd)"
-          ls -la
+    outputs:
+      merged: ${{ github.event.pull_request.merged || github.event_name == 'workflow_dispatch' }}
+      base_ref: ${{ github.event.pull_request.base.ref || github.ref }}
+      head: ${{ github.event.pull_request.head.ref || github.event.inputs.version }}
 
-      - name: Run Commands in Postgress Directory
+
+  echo_outputs:
+    runs-on: ubuntu-latest
+    needs: get_deployment_details # Ensure this job runs after get_deployment_details
+    steps:
+      - name: Echo Outputs
         run: |
-          echo "Current directory: $(pwd)"
-          ls -la
+          echo "Merged: ${{ needs.get_deployment_details.outputs.merged }}"
+          echo "Base Ref: ${{ needs.get_deployment_details.outputs.base_ref }}"
+          echo "Head: ${{ needs.get_deployment_details.outputs.head }}"
