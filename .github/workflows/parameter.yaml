@@ -20,6 +20,10 @@ jobs:
       run:
         working-directory: ./postgress
     steps:
+      # Step 1: Checkout the repository metadata
+      - name: Checkout Repository Metadata
+        uses: actions/checkout@v4
+
       - name: make sure workflow_dispatch is from develop and master 
         id: check_workflow_dispatch
         run: |
