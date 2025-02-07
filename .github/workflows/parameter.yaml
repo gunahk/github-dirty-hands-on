@@ -1,7 +1,7 @@
 on:
   pull_request:
     branches:
-      - main
+      - master
       - develop
     types:
       - closed
@@ -27,7 +27,7 @@ jobs:
       - name: make sure workflow_dispatch is from develop and master 
         id: check_workflow_dispatch
         run: |
-          ALLOWED_BRANCHES=("develop" "main")
+          ALLOWED_BRANCHES=("develop" "master")
           INPUT_BRANCH="${{ github.event.inputs.branch }}"
 
           if [[ -z "$INPUT_BRANCH" ]]; then  # Check if input is empty
