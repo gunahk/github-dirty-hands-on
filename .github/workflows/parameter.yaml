@@ -42,3 +42,19 @@ jobs:
         run: |
           echo "Original actor: $ORIGINAL_ACTOR"
           echo "Triggering actor: $TRIGGER_ACTOR"
+
+
+      
+      - name: Trigger sync workflow
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'deployment-complete',
+              client_payload: {
+                ref: context.ref,
+                sha: context.sha
+              }
+            })
