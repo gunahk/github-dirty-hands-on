@@ -9,7 +9,7 @@ on:
 env:
   INTERMEDIATE_BRANCH_PREFIX: "auto-sync/master-to-develop"
   TARGET_BRANCH: "develop"
-  SOURCE_BRANCH: "master"  # Change to 'main' if using main branch
+  SOURCE_BRANCH: "main"  # Change to 'main' if using main branch
   PR_BYPASS: "true"  # Set to "true" to enable auto-merge bypass, "false" to wait for manual approval
 
 jobs:
