@@ -1,0 +1,461 @@
+# .github/workflows/sync-master-to-develop.yml
+name: Auto-sync Master to Develop
+
+on:
+  push:
+    branches: [master, main]  # Trigger on pushes to master/main branch
+  workflow_dispatch:  # Allow manual triggering
+
+env:
+  INTERMEDIATE_BRANCH_PREFIX: "auto-sync/master-to-develop"
+  TARGET_BRANCH: "develop"
+  SOURCE_BRANCH: "master"  # Change to 'main' if using main branch
+
+jobs:
+  sync-branches:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for proper branch operations
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Cleanup existing auto-sync branches
+        id: cleanup-existing
+        run: |
+          echo "🧹 Checking for existing auto-sync branches..."
+          
+          # Fetch all remote branches
+          git fetch --all
+          
+          # Find all auto-sync branches (both local and remote)
+          EXISTING_BRANCHES=$(git branch -r | grep "origin/${INTERMEDIATE_BRANCH_PREFIX}" | sed 's/origin\///' | tr -d ' ' || echo "")
+          
+          if [[ -n "$EXISTING_BRANCHES" ]]; then
+            echo "Found existing auto-sync branches:"
+            echo "$EXISTING_BRANCHES"
+            
+            # Delete each existing auto-sync branch
+            for branch in $EXISTING_BRANCHES; do
+              if [[ "$branch" =~ ^${INTERMEDIATE_BRANCH_PREFIX} ]]; then
+                echo "🗑️ Deleting existing branch: $branch"
+                git push origin --delete "$branch" 2>/dev/null || echo "Branch $branch may have been already deleted"
+                
+                # Also delete local branch if it exists
+                git branch -D "$branch" 2>/dev/null || echo "Local branch $branch not found"
+              fi
+            done
+            
+            echo "cleanup_performed=true" >> $GITHUB_OUTPUT
+            echo "✅ Cleanup of existing branches completed"
+          else
+            echo "No existing auto-sync branches found"
+            echo "cleanup_performed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate unique branch name
+        id: branch-name
+        run: |
+          TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          BRANCH_NAME="${INTERMEDIATE_BRANCH_PREFIX}-${TIMESTAMP}-${COMMIT_SHA}"
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+          echo "Generated branch name: ${BRANCH_NAME}"
+
+      - name: Create and push intermediate branch
+        id: create-branch
+        run: |
+          BRANCH_NAME="${{ steps.branch-name.outputs.branch_name }}"
+          
+          # Ensure we're on the source branch and it's up to date
+          git checkout ${{ env.SOURCE_BRANCH }}
+          git pull origin ${{ env.SOURCE_BRANCH }}
+          
+          # Create intermediate branch from current master/main
+          git checkout -b "${BRANCH_NAME}"
+          git push origin "${BRANCH_NAME}"
+          
+          echo "branch_created=true" >> $GITHUB_OUTPUT
+          echo "✅ Intermediate branch ${BRANCH_NAME} created and pushed"
+
+      - name: Check for conflicts with develop
+        id: conflict-check
+        run: |
+          BRANCH_NAME="${{ steps.branch-name.outputs.branch_name }}"
+          
+          # Fetch latest develop branch
+          git fetch origin ${{ env.TARGET_BRANCH }}
+          
+          # Attempt to merge develop into intermediate branch to detect conflicts
+          if git merge origin/${{ env.TARGET_BRANCH }} --no-commit --no-ff; then
+            echo "has_conflicts=false" >> $GITHUB_OUTPUT
+            echo "No conflicts detected"
+            git merge --abort  # Abort the test merge
+          else
+            echo "has_conflicts=true" >> $GITHUB_OUTPUT
+            echo "Conflicts detected!"
+            git merge --abort  # Abort the failed merge
+          fi
+
+      - name: Create Pull Request
+        if: steps.conflict-check.outputs.has_conflicts == 'false'
+        id: create-pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branchName = '${{ steps.branch-name.outputs.branch_name }}';
+            const commitSha = context.sha.substring(0, 7);
+            
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🤖 Auto-sync: ${context.payload.head_commit.message.split('\n')[0]}`,
+              head: branchName,
+              base: '${{ env.TARGET_BRANCH }}',
+              body: `## 🔄 Automatic Sync from Master to Develop
+              
+              **Source Commit:** \`${commitSha}\`
+              **Commit Message:** ${context.payload.head_commit.message}
+              **Author:** @${context.payload.head_commit.author.username}
+              
+              ### Changes
+              This PR automatically syncs changes from \`${{ env.SOURCE_BRANCH }}\` to \`${{ env.TARGET_BRANCH }}\`.
+              
+              **⚡ Auto-generated by GitHub Actions**
+              
+              ---
+              
+              **📋 Merge Checklist:**
+              - [ ] All CI checks pass
+              - [ ] Code review completed (if required)
+              - [ ] Ready to merge
+              
+              > This PR will be automatically merged if all checks pass and no conflicts are detected.`,
+              draft: false
+            });
+            
+            console.log(`Created PR #${pr.number}: ${pr.html_url}`);
+            core.setOutput('pr_number', pr.number);
+            core.setOutput('pr_url', pr.html_url);
+            return pr.number;
+
+      - name: Wait for PR checks and auto-merge
+        if: steps.conflict-check.outputs.has_conflicts == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.create-pr.outputs.result }};
+            const maxAttempts = 30; // Maximum wait time: 15 minutes (30 * 30s)
+            let attempts = 0;
+            
+            console.log(`Monitoring PR #${prNumber} for auto-merge...`);
+            
+            while (attempts < maxAttempts) {
+              attempts++;
+              
+              // Get PR status
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+              
+              if (pr.merged) {
+                console.log(`✅ PR #${prNumber} has been merged successfully!`);
+                core.setOutput('merge_status', 'merged');
+                break;
+              }
+              
+              if (pr.mergeable === false) {
+                console.log(`❌ PR #${prNumber} has merge conflicts!`);
+                core.setOutput('merge_status', 'conflicts');
+                break;
+              }
+              
+              // Check if all required checks have passed
+              const { data: checks } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: pr.head.sha
+              });
+              
+              const { data: statuses } = await github.rest.repos.listCommitStatusesForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: pr.head.sha
+              });
+              
+              const allChecksPassed = checks.check_runs.every(check => 
+                check.conclusion === 'success' || check.conclusion === 'neutral'
+              ) && statuses.every(status => 
+                status.state === 'success'
+              );
+              
+              if (allChecksPassed && pr.mergeable) {
+                try {
+                  await github.rest.pulls.merge({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: prNumber,
+                    commit_title: `Auto-merge: ${pr.title}`,
+                    commit_message: `Automatically merged by GitHub Actions\n\nOriginal PR: ${pr.html_url}`,
+                    merge_method: 'merge'
+                  });
+                  
+                  console.log(`✅ Successfully auto-merged PR #${prNumber}`);
+                  core.setOutput('merge_status', 'merged');
+                  break;
+                } catch (error) {
+                  console.log(`Failed to auto-merge: ${error.message}`);
+                  core.setOutput('merge_status', 'failed');
+                  break;
+                }
+              }
+              
+              console.log(`Attempt ${attempts}/${maxAttempts}: Waiting for checks to complete...`);
+              await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
+            }
+            
+            if (attempts >= maxAttempts) {
+              console.log(`⏰ Timeout reached waiting for PR #${prNumber} to be ready for merge`);
+              core.setOutput('merge_status', 'timeout');
+            }
+
+      - name: Send conflict notification
+        if: steps.conflict-check.outputs.has_conflicts == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commitSha = context.sha.substring(0, 7);
+            const commitMessage = context.payload.head_commit.message.split('\n')[0];
+            const commitAuthor = context.payload.head_commit.author.username;
+            
+            // Create an issue for conflict notification
+            const { data: issue } = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Merge Conflict: Unable to sync master to develop`,
+              body: `## ⚠️ Automatic Sync Failed - Merge Conflicts Detected
+              
+              **Failed Commit:** \`${commitSha}\`
+              **Commit Message:** ${commitMessage}
+              **Author:** @${commitAuthor}
+              **Date:** ${new Date().toISOString()}
+              
+              ### 🔍 Issue Details
+              The automatic sync from \`${{ env.SOURCE_BRANCH }}\` to \`${{ env.TARGET_BRANCH }}\` failed due to merge conflicts.
+              
+              ### 🛠️ Required Actions
+              1. **Manual Review Required:** A developer needs to manually resolve the conflicts
+              2. **Create Manual PR:** Create a pull request from \`${{ env.SOURCE_BRANCH }}\` to \`${{ env.TARGET_BRANCH }}\`
+              3. **Resolve Conflicts:** Use your preferred merge tool to resolve conflicts
+              4. **Test & Merge:** Ensure all tests pass before merging
+              
+              ### 📋 Conflict Resolution Steps
+              \`\`\`bash
+              # 1. Create a new branch for conflict resolution
+              git checkout ${{ env.TARGET_BRANCH }}
+              git pull origin ${{ env.TARGET_BRANCH }}
+              git checkout -b fix/sync-conflicts-${commitSha}
+              
+              # 2. Merge master and resolve conflicts
+              git merge origin/${{ env.SOURCE_BRANCH }}
+              # Resolve conflicts in your editor
+              
+              # 3. Commit and push
+              git add .
+              git commit -m "Resolve merge conflicts for sync from master"
+              git push origin fix/sync-conflicts-${commitSha}
+              
+              # 4. Create PR through GitHub UI or CLI
+              \`\`\`
+              
+              **🤖 This issue was automatically created by GitHub Actions**
+              
+              ---
+              **Assignees:** Please assign this to the relevant team members
+              **Labels:** \`conflict\`, \`auto-sync\`, \`needs-manual-resolution\``,
+              labels: ['conflict', 'auto-sync', 'needs-manual-resolution', 'bug']
+            });
+            
+            console.log(`Created conflict notification issue: ${issue.html_url}`);
+
+      - name: Slack Notification - Workflow Status
+        if: always()
+        run: |
+          ACTIONS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ACTIONS_ACTOR=${{ github.event.sender.login }}
+          BRANCH_NAME=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          REPO_NAME=${{ github.repository }}
+          RELEASE_SLACK_URL=${{ secrets.RELEASE_SLACK_URL }}
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          
+          # Only send notification if we're on master/main branch
+          if [ "$GITHUB_REF" == "refs/heads/master" ] || [ "$GITHUB_REF" == "refs/heads/main" ]; then
+            if [[ "${{ steps.conflict-check.outputs.has_conflicts }}" == "true" ]]; then
+              echo "Sending conflict notification to Slack..."
+              curl -X POST -H 'Content-type: application/json' \
+                --data '{
+                  "attachments": [
+                    {
+                      "color": "#FF8C00",
+                      "text": ":warning: GitHub Actions Auto-Sync: master → develop **CONFLICT DETECTED** :warning:\n\n*Job:* Auto-sync Master to Develop\n*Triggered by:* '"${ACTIONS_ACTOR}"'\n*Repository:* '"${REPO_NAME}"'\n*Source Branch:* '"${BRANCH_NAME}"'\n*Target Branch:* develop\n*Commit:* `'"${COMMIT_SHA}"'`\n*Message:* '"${COMMIT_MSG}"'\n\n:exclamation: **Manual intervention required** - Merge conflicts detected!\n\n:point_right: Resolve conflicts manually and create PR\n:gear: Workflow Details: <'"${ACTIONS_URL}"'|Click to View>"
+                    }
+                  ]
+                }' \
+                ${RELEASE_SLACK_URL}
+                
+            elif [[ "${{ steps.create-pr.outputs.pr_number }}" != "" ]]; then
+              PR_URL="${{ steps.create-pr.outputs.pr_url }}"
+              PR_NUMBER="${{ steps.create-pr.outputs.pr_number }}"
+              
+              echo "Sending PR creation notification to Slack..."
+              curl -X POST -H 'Content-type: application/json' \
+                --data '{
+                  "attachments": [
+                    {
+                      "color": "#36a64f",
+                      "text": ":rocket: GitHub Actions Auto-Sync: master → develop **PR CREATED** :rocket:\n\n*Job:* Auto-sync Master to Develop\n*Triggered by:* '"${ACTIONS_ACTOR}"'\n*Repository:* '"${REPO_NAME}"'\n*Source Branch:* '"${BRANCH_NAME}"'\n*Target Branch:* develop\n*Commit:* `'"${COMMIT_SHA}"'`\n*Message:* '"${COMMIT_MSG}"'\n*Pull Request:* #'"${PR_NUMBER}"'\n\n:white_check_mark: **Pull Request created successfully!**\n\n:point_right: **Review & Merge PR:** <'"${PR_URL}"'|Pull Request #'"${PR_NUMBER}"'>\n:gear: **Workflow Details:** <'"${ACTIONS_URL}"'|Click to View>"
+                    }
+                  ]
+                }' \
+                ${RELEASE_SLACK_URL}
+                
+            else
+              echo "Sending workflow failure notification to Slack..."
+              curl -X POST -H 'Content-type: application/json' \
+                --data '{
+                  "attachments": [
+                    {
+                      "color": "#FF0000",
+                      "text": ":x: GitHub Actions Auto-Sync: master → develop **FAILED** :x:\n\n*Job:* Auto-sync Master to Develop\n*Triggered by:* '"${ACTIONS_ACTOR}"'\n*Repository:* '"${REPO_NAME}"'\n*Source Branch:* '"${BRANCH_NAME}"'\n*Target Branch:* develop\n*Commit:* `'"${COMMIT_SHA}"'`\n*Message:* '"${COMMIT_MSG}"'\n\n:warning: **Sync workflow failed!** Please check the logs and resolve any issues.\n\n:gear: **Workflow Details:** <'"${ACTIONS_URL}"'|Click to View>"
+                    }
+                  ]
+                }' \
+                ${RELEASE_SLACK_URL}
+            fi
+          fi
+
+      - name: Final cleanup - Ensure all auto-sync branches are removed
+        if: always()
+        run: |
+          echo "🧹 Performing final cleanup of auto-sync branches..."
+          
+          # Get the current intermediate branch name
+          CURRENT_BRANCH="${{ steps.branch-name.outputs.branch_name }}"
+          
+          # Fetch latest remote state
+          git fetch --all --prune
+          
+          # Find and delete ALL auto-sync branches (including current one)
+          REMAINING_BRANCHES=$(git branch -r | grep "origin/${INTERMEDIATE_BRANCH_PREFIX}" | sed 's/origin\///' | tr -d ' ' || echo "")
+          
+          if [[ -n "$REMAINING_BRANCHES" ]]; then
+            echo "🗑️ Cleaning up remaining auto-sync branches:"
+            for branch in $REMAINING_BRANCHES; do
+              if [[ "$branch" =~ ^${INTERMEDIATE_BRANCH_PREFIX} ]]; then
+                echo "Deleting branch: $branch"
+                git push origin --delete "$branch" 2>/dev/null || echo "Branch $branch already deleted"
+                
+                # Clean up local branch if it exists
+                git branch -D "$branch" 2>/dev/null || echo "Local branch $branch not found"
+              fi
+            done
+            echo "✅ Final cleanup completed"
+          else
+            echo "✅ No auto-sync branches found - cleanup already complete"
+          fi
+          
+          # Extra safety: Try to delete the current branch one more time
+          if [[ -n "$CURRENT_BRANCH" ]]; then
+            echo "🔄 Final attempt to delete current branch: $CURRENT_BRANCH"
+            git push origin --delete "$CURRENT_BRANCH" 2>/dev/null || echo "Current branch already cleaned up"
+          fi
+
+      - name: Slack Notification - Final Status Update
+        if: always() && steps.create-pr.outputs.pr_number != ''
+        run: |
+          ACTIONS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ACTIONS_ACTOR=${{ github.event.sender.login }}
+          BRANCH_NAME=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          REPO_NAME=${{ github.repository }}
+          RELEASE_SLACK_URL=${{ secrets.RELEASE_SLACK_URL }}
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          PR_URL="${{ steps.create-pr.outputs.pr_url }}"
+          PR_NUMBER="${{ steps.create-pr.outputs.pr_number }}"
+          
+          # Only send final status if we're on master/main branch and there's a PR
+          if [ "$GITHUB_REF" == "refs/heads/master" ] || [ "$GITHUB_REF" == "refs/heads/main" ]; then
+            # Wait a bit to see if PR was auto-merged
+            sleep 10
+            
+            # Check if PR was merged
+            PR_STATUS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}" | \
+              grep -o '"merged":[^,]*' | cut -d: -f2)
+            
+            if [[ "$PR_STATUS" == *"true"* ]]; then
+              echo "Sending PR merged notification to Slack..."
+              curl -X POST -H 'Content-type: application/json' \
+                --data '{
+                  "attachments": [
+                    {
+                      "color": "#36a64f",
+                      "text": ":white_check_mark: GitHub Actions Auto-Sync: master → develop **COMPLETED** :white_check_mark:\n\n*Job:* Auto-sync Master to Develop\n*Triggered by:* '"${ACTIONS_ACTOR}"'\n*Repository:* '"${REPO_NAME}"'\n*Source Branch:* '"${BRANCH_NAME}"'\n*Target Branch:* develop\n*Commit:* `'"${COMMIT_SHA}"'`\n*Message:* '"${COMMIT_MSG}"'\n*Pull Request:* #'"${PR_NUMBER}"' :merged:\n\n:rocket: **Sync completed successfully!** Changes are now in develop branch.\n\n:point_right: **View Merged PR:** <'"${PR_URL}"'|Pull Request #'"${PR_NUMBER}"'>\n:gear: **Workflow Details:** <'"${ACTIONS_URL}"'|Click to View>"
+                    }
+                  ]
+                }' \
+                ${RELEASE_SLACK_URL}
+            else
+              echo "Sending PR pending notification to Slack..."
+              curl -X POST -H 'Content-type: application/json' \
+                --data '{
+                  "attachments": [
+                    {
+                      "color": "#FFA500",
+                      "text": ":hourglass_flowing_sand: GitHub Actions Auto-Sync: master → develop **PENDING REVIEW** :hourglass_flowing_sand:\n\n*Job:* Auto-sync Master to Develop\n*Triggered by:* '"${ACTIONS_ACTOR}"'\n*Repository:* '"${REPO_NAME}"'\n*Source Branch:* '"${BRANCH_NAME}"'\n*Target Branch:* develop\n*Commit:* `'"${COMMIT_SHA}"'`\n*Message:* '"${COMMIT_MSG}"'\n*Pull Request:* #'"${PR_NUMBER}"' :eyes:\n\n:point_right: **PR waiting for review/checks!** Please review and merge when ready.\n\n:point_right: **Review & Merge PR:** <'"${PR_URL}"'|Pull Request #'"${PR_NUMBER}"'>\n:gear: **Workflow Details:** <'"${ACTIONS_URL}"'|Click to View>"
+                    }
+                  ]
+                }' \
+                ${RELEASE_SLACK_URL}
+            fi
+          fi
+
+      - name: Workflow Summary
+        if: always()
+        run: |
+          echo "## 📊 Sync Workflow Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Source Branch:** \`${{ env.SOURCE_BRANCH }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Target Branch:** \`${{ env.TARGET_BRANCH }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Intermediate Branch:** \`${{ steps.branch-name.outputs.branch_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Pre-cleanup Performed:** ${{ steps.cleanup-existing.outputs.cleanup_performed }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Conflicts Detected:** ${{ steps.conflict-check.outputs.has_conflicts }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ steps.conflict-check.outputs.has_conflicts }}" == "true" ]]; then
+            echo "❌ **Status:** Failed due to merge conflicts" >> $GITHUB_STEP_SUMMARY
+            echo "📋 **Action Required:** Manual conflict resolution needed" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ steps.create-pr.outputs.pr_number }}" != "" ]]; then
+            echo "✅ **Status:** PR created successfully" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 **PR Link:** ${{ steps.create-pr.outputs.pr_url }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Status:** Workflow completed with issues" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🧹 **Cleanup:** All auto-sync branches have been removed" >> $GITHUB_STEP_SUMMARY
+          echo "📢 **Notifications:** Slack notifications sent for all major events" >> $GITHUB_STEP_SUMMARY
