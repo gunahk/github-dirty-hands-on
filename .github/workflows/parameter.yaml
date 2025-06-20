@@ -1,41 +1,102 @@
+name: Deploy and Sync
+
 on:
+  pull_request:
+    branches:
+      - master
+      - develop
+    types:
+      - closed
+  # Trigger manually
   workflow_dispatch:
     inputs:
-      param1:
-        description: 'please select Branch and write Something below to Triggger'
+      version:
+        description: 'Type any version'
         required: true
-        default: 'default_value'
-
-name: dashboard-api-build-and-deploy-github-actions-flow
+      branch:
+        description: 'Branch to deploy from'
+        required: true
+        default: 'develop'
+        type: choice
+        options:
+          - develop
+          - master
 
 jobs:
-  dashboard_api_build_and_push_to_ECR:
-    name: build and push to ECR dashboard_api
+  get_deployment_details:
     runs-on: ubuntu-latest
-
+    # Only run if PR was merged or if manually triggered
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    defaults:
+      run:
+        working-directory: ./postgress
     steps:
-      - name: Check Branch Name for feature and  release
-        id: check_branch_for_feature_and_release_hotfix
-        run: | 
-          first_word=$(echo ${{ github.ref_name }} | awk -F/ '{print $1}')
-          echo "BRANCH_NAME=${first_word}" >> $GITHUB_ENV
-          echo $BRANCH_NAME
-          
-      - name: helm delete
-        id: helm_delete_api
+      # Step 1: Checkout the repository metadata
+      - name: Checkout Repository Metadata
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.ref }}
+      
+      - name: Validate workflow_dispatch branch
+        if: github.event_name == 'workflow_dispatch'
+        id: check_workflow_dispatch
         run: |
-          set -vv
-          if [[ "${{ github.ref_name }}" =~ 'main/' ]]; then
-            feature_name=$(echo ${{ github.ref_name }}  | cut -d'/' -f2)
-            echo $feature_name
-            # Change helm name, namespace, Autoscalling and Endpoint
-            HELM_NAME=dev-${feature_name}-helm
-            HELM_NAMESPACE=dev-${feature_name}-ns
-          elif [[  "${{ github.ref_name }}" =~ 'release/' ]]; then
-            release_name=$(echo ${{ github.ref_name }}  | cut -d'/' -f2)
-            echo $release_name
-            # Change helm name, namespace, Autoscalling and Endpoint
-            HELM_NAME=dev-${release_name}-helm
-            HELM_NAMESPACE=dev-${feature_name}-ns
-          fi        
-          helm uninstall  ${HELM_NAME} -n ${HELM_NAMESPACE}
+          ALLOWED_BRANCHES=("develop" "master")
+          INPUT_BRANCH="${{ github.event.inputs.branch }}"
+          
+          if [[ -z "$INPUT_BRANCH" ]]; then
+            echo "::error::Branch input is required for workflow_dispatch"
+            exit 1
+          fi
+          
+          # Check if branch is in allowed list
+          if [[ ! " ${ALLOWED_BRANCHES[@]} " =~ " ${INPUT_BRANCH} " ]]; then
+            echo "::error::Branch '$INPUT_BRANCH' is not allowed. Must be one of: ${ALLOWED_BRANCHES[*]}"
+            exit 1
+          fi
+          
+          echo "✅ Branch validation passed: $INPUT_BRANCH"
+          echo "validated-branch=$INPUT_BRANCH" >> $GITHUB_OUTPUT
+      
+      - name: Show deployment info
+        run: |
+          echo "=== Deployment Details ==="
+          echo "Event: ${{ github.event_name }}"
+          echo "Branch: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.head_ref || github.ref_name }}"
+          echo "Version: ${{ github.event.inputs.version || 'auto' }}"
+          echo "SHA: ${{ github.sha }}"
+      
+      - name: Show actors
+        env: 
+          ORIGINAL_ACTOR: ${{ github.actor }}
+          TRIGGER_ACTOR: ${{ github.triggering_actor }}
+        run: |
+          echo "Original actor: $ORIGINAL_ACTOR"
+          echo "Triggering actor: $TRIGGER_ACTOR"
+      
+      # Add your deployment steps here
+      - name: Deploy application
+        run: |
+          echo "🚀 Deploying application..."
+          echo "Version: ${{ github.event.inputs.version || 'latest' }}"
+          # Add your actual deployment commands here
+      
+      - name: Trigger sync workflow
+        # Only trigger sync if deploying from master
+        if: (github.event_name == 'workflow_dispatch' && github.event.inputs.branch == 'master') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master')
+        uses: actions/github-script@v6
+        with:
+          script: |
+            console.log('🔄 Triggering sync workflow after master deployment');
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'deployment-complete',
+              client_payload: {
+                ref: context.ref,
+                sha: context.sha,
+                deployed_from: '${{ github.event_name == "workflow_dispatch" && github.event.inputs.branch || github.head_ref || github.ref_name }}',
+                version: '${{ github.event.inputs.version || "auto" }}'
+              }
+            });
+            console.log('✅ Sync workflow triggered successfully');
