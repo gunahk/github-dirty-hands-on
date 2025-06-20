@@ -3,13 +3,13 @@ name: Auto-sync Master to Develop
 
 on:
   push:
-    branches: [main]  # Trigger on pushes to master/main branch
+    branches: [master, main]  # Trigger on pushes to master/main branch
   workflow_dispatch:  # Allow manual triggering
 
 env:
   INTERMEDIATE_BRANCH_PREFIX: "auto-sync/master-to-develop"
   TARGET_BRANCH: "develop"
-  SOURCE_BRANCH: "main"  # Change to 'main' if using main branch
+  SOURCE_BRANCH: "master"  # Change to 'main' if using main branch
 
 jobs:
   sync-branches:
@@ -97,16 +97,43 @@ jobs:
           # Fetch latest develop branch
           git fetch origin ${{ env.TARGET_BRANCH }}
           
-          # Attempt to merge develop into intermediate branch to detect conflicts
-          if git merge origin/${{ env.TARGET_BRANCH }} --no-commit --no-ff; then
-            echo "has_conflicts=false" >> $GITHUB_OUTPUT
-            echo "No conflicts detected"
-            git merge --abort  # Abort the test merge
+          # Reset to clean state
+          git reset --hard HEAD
+          
+          # Create a temporary test branch for conflict detection
+          TEMP_TEST_BRANCH="temp-conflict-test-$(date +%s)"
+          git checkout -b "${TEMP_TEST_BRANCH}"
+          
+          # Attempt to merge develop to detect conflicts
+          echo "Testing merge from ${{ env.TARGET_BRANCH }} into ${TEMP_TEST_BRANCH}..."
+          
+          if git merge origin/${{ env.TARGET_BRANCH }} --no-commit --no-ff 2>/dev/null; then
+            # Check if merge was successful (no conflicts)
+            if git diff --cached --quiet && git diff --quiet; then
+              echo "has_conflicts=false" >> $GITHUB_OUTPUT
+              echo "✅ No conflicts detected - branches can be merged cleanly"
+              # Reset the merge since it was just a test
+              git reset --hard HEAD
+            else
+              # There are changes staged/unstaged, meaning merge happened
+              echo "has_conflicts=false" >> $GITHUB_OUTPUT
+              echo "✅ No conflicts detected - merge completed successfully"
+              # Reset the merge since it was just a test
+              git reset --hard HEAD
+            fi
           else
+            # Merge failed due to conflicts
             echo "has_conflicts=true" >> $GITHUB_OUTPUT
-            echo "Conflicts detected!"
-            git merge --abort  # Abort the failed merge
+            echo "❌ Conflicts detected during merge!"
+            # Reset to clean state
+            git reset --hard HEAD
           fi
+          
+          # Switch back to original branch and cleanup
+          git checkout "${BRANCH_NAME}"
+          git branch -D "${TEMP_TEST_BRANCH}" 2>/dev/null || echo "Temp branch cleanup completed"
+          
+          echo "Conflict check completed. Has conflicts: $(cat $GITHUB_OUTPUT | grep has_conflicts | cut -d= -f2)"
 
       - name: Create Pull Request
         if: steps.conflict-check.outputs.has_conflicts == 'false'
