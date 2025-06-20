@@ -230,11 +230,11 @@ jobs:
                 repo: context.repo.repo,
                 pull_number: prNumber,
                 commit_title: `🤖 Auto-sync: ${pr.title}`,
-                commit_message: `Automatically synced from ${context.ref.replace('refs/heads/', '')} to ${{ env.TARGET_BRANCH }}
+                commit_message: `Automatically synced from ${context.ref.replace('refs/heads/', '')} to develop
 
-🔄 **Auto-Sync Details:**
+🔄 Auto-Sync Details:
 - Source: ${context.ref.replace('refs/heads/', '')}
-- Target: ${{ env.TARGET_BRANCH }}
+- Target: develop
 - Triggered by: ${context.actor}
 - Commit: ${context.sha.substring(0, 7)}
 - PR: ${pr.html_url}
