@@ -230,16 +230,7 @@ jobs:
                 repo: context.repo.repo,
                 pull_number: prNumber,
                 commit_title: `🤖 Auto-sync: ${pr.title}`,
-                commit_message: `Automatically synced from ${context.ref.replace('refs/heads/', '')} to develop
-
-🔄 Auto-Sync Details:
-- Source: ${context.ref.replace('refs/heads/', '')}
-- Target: develop
-- Triggered by: ${context.actor}
-- Commit: ${context.sha.substring(0, 7)}
-- PR: ${pr.html_url}
-
-🤖 This merge was performed automatically by GitHub Actions with bypass enabled`,
+                commit_message: `Automatically synced from ${context.ref.replace('refs/heads/', '')} to develop\n\n🔄 Auto-Sync Details:\n- Source: ${context.ref.replace('refs/heads/', '')}\n- Target: develop\n- Triggered by: ${context.actor}\n- Commit: ${context.sha.substring(0, 7)}\n- PR: ${pr.html_url}\n\n🤖 This merge was performed automatically by GitHub Actions with bypass enabled`,
                 merge_method: 'merge'
               });
               
