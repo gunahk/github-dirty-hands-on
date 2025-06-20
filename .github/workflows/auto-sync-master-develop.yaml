@@ -3,13 +3,13 @@ name: Auto-sync Master to Develop
 
 on:
   push:
-    branches: [master, main]  # Trigger on pushes to master/main branch
+    branches: [main]  # Trigger on pushes to master/main branch
   workflow_dispatch:  # Allow manual triggering
 
 env:
   INTERMEDIATE_BRANCH_PREFIX: "auto-sync/master-to-develop"
   TARGET_BRANCH: "develop"
-  SOURCE_BRANCH: "master"  # Change to 'main' if using main branch
+  SOURCE_BRANCH: "main"  # Change to 'main' if using main branch
 
 jobs:
   sync-branches:
