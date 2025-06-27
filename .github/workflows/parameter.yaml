@@ -32,7 +32,7 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          base: develop
+          base: develop           # Ensure base is 'develop' (this is the target branch)
           branch: ${{ env.BRANCH_NAME }}  # Use the dynamically generated branch name
           title: "Automated PR from ${{ env.BRANCH_NAME }}"
           body: "This is an automated pull request from ${{ env.BRANCH_NAME }} to develop."
