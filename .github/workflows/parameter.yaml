@@ -48,39 +48,45 @@ jobs:
         echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
     
     - name: Create intermediate branch from master
+      id: create_pr
       run: |
         git checkout master
         git pull origin master
         git checkout -b ${{ steps.branch_name.outputs.branch_name }}
         git push origin ${{ steps.branch_name.outputs.branch_name }}
-    
-    - name: Create Pull Request
-      id: create_pr
-      uses: peter-evans/create-pull-request@v5
-      with:
-        token: ${{ secrets.PR_TOKEN }}
-        branch: develop
-        base: ${{ steps.branch_name.outputs.branch_name }}
-        title: "Auto-merge: Master to Develop (${{ steps.branch_name.outputs.branch_name }})"
-        body: |
-          ## Auto-generated Pull Request
-          
-          This PR was automatically created to merge changes from `master` into `develop`.
-          
-          **Source:** `master`
-          **Target:** `develop`
-          **Intermediate Branch:** `${{ steps.branch_name.outputs.branch_name }}`
-          **Triggered by workflow:** ${{ github.event.client_payload.workflow_run_id }}
-          **Source commit:** ${{ github.event.client_payload.commit_sha }}
-          
-          ### Changes
-          This PR contains the latest changes from the master branch.
-          
-          ---
-          *This PR was created automatically by GitHub Actions*
-        labels: |
-          auto-merge
-          automated
+
+
+        PR_BODY="## Auto-generated Pull Request
+
+        This PR was automatically created to merge changes from \`master\` into \`develop\`.
+
+        **Source:** \`master\`
+        **Target:** \`develop\`
+        **Intermediate Branch:** \`${{ steps.branch_name.outputs.branch_name }}\`
+        **Triggered by workflow:** ${{ github.event.client_payload.workflow_run_id }}
+        **Source commit:** ${{ github.event.client_payload.commit_sha }}
+
+        ### Changes
+        This PR contains the latest changes from the master branch.
+
+        ---
+        *This PR was created automatically by GitHub Actions*"
+
+        # Create the pull request using GitHub CLI
+        PR_URL=$(gh pr create \
+          --base develop \
+          --head ${{ steps.branch_name.outputs.branch_name }} \
+          --title "Auto-merge: Master to Develop (${{ steps.branch_name.outputs.branch_name }})" \
+          --body "$PR_BODY" \
+          --label "auto-merge,automated" \
+          --repo ${{ github.repository }})
+        
+        # Extract PR number from URL
+        PR_NUMBER=$(echo $PR_URL | sed 's/.*\/pull\///')
+        
+        echo "pull-request-url=${PR_URL}" >> $GITHUB_OUTPUT
+        echo "pull-request-number=${PR_NUMBER}" >> $GITHUB_OUTPUT
+        echo "Created PR #${PR_NUMBER}: ${PR_URL}"
     
     - name: Wait for PR creation
       run: sleep 10
