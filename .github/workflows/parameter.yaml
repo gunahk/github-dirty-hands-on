@@ -1,5 +1,4 @@
 name: Full Workflow with PR and Notifications
-
 on:
   push:
     branches:
@@ -10,7 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4  # Updated to latest version
+        with:
+          fetch-depth: 0  # Fetch full history for proper branching
         
       - name: Generate dynamic intermediate branch name
         id: generate_branch
@@ -18,63 +19,85 @@ jobs:
           # Create a dynamic branch name based on the current date and time
           BRANCH_NAME="intermediate-branch-$(date +'%Y%m%d%H%M%S')"
           echo "Generated branch name: $BRANCH_NAME"
-          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV  # Set this branch name as an environment variable
-
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          
       - name: Set Git user identity
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
-
+          
       - name: Create Intermediate Branch from master
         run: |
           git checkout master
           git pull origin master
           git checkout -b ${{ env.BRANCH_NAME }}
           
-          # Bring the intermediate branch up-to-date with the latest master changes
-          git pull origin master
-          
           # Add a dummy change to ensure the branch is different from 'develop'
-          echo "Dummy change to create difference" > dummy-file.txt
+          echo "Dummy change to create difference - $(date)" > dummy-file.txt
           git add dummy-file.txt
           git commit -m "Add dummy change to create difference"
           
           git push origin ${{ env.BRANCH_NAME }}
-
+          
       - name: Create Pull Request from intermediate to develop
         id: create_pr
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v5  # Updated to latest version
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          base: develop           # Ensure base is 'develop' (this is the target branch)
-          branch: ${{ env.BRANCH_NAME }}  # Use the dynamically generated branch name
+          base: develop
+          branch: ${{ env.BRANCH_NAME }}
           title: "Automated PR from ${{ env.BRANCH_NAME }}"
           body: "This is an automated pull request from ${{ env.BRANCH_NAME }} to develop."
           draft: false
-
+          
+      - name: Get PR number
+        id: get_pr_number
+        run: |
+          # Get the PR number from the created PR
+          pr_number=$(gh pr list --head ${{ env.BRANCH_NAME }} --base develop --json number --jq '.[0].number')
+          echo "PR_NUMBER=$pr_number" >> $GITHUB_ENV
+          echo "pr_number=$pr_number" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
       - name: Check if PR has conflicts
         id: check_pr_conflicts
         run: |
-          pr_url="https://api.github.com/repos/${{ github.repository }}/pulls/${{ steps.verify_pr.outputs.pr_number }}"
-          pr_status=$(curl -s $pr_url | jq '.mergeable')
+          # Wait a moment for GitHub to process the PR
+          sleep 5
+          
+          pr_url="https://api.github.com/repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}"
+          pr_data=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $pr_url)
+          pr_status=$(echo "$pr_data" | jq -r '.mergeable')
           
           echo "PR mergeable status: $pr_status"
           echo "mergeable=$pr_status" >> $GITHUB_ENV
-
+          echo "mergeable=$pr_status" >> $GITHUB_OUTPUT
+          
       - name: Slack Notification if PR has conflicts
-        if: ${{ env.mergeable == 'false' }}
+        if: env.mergeable == 'false'
         run: |
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"The pull request from ${{ env.BRANCH_NAME }} to develop has conflicts."}' ${{ secrets.SLACK_WEBHOOK_URL }}
-
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\"⚠️ The pull request from ${{ env.BRANCH_NAME }} to develop has conflicts. PR #${{ env.PR_NUMBER }}\"}" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
+          
       - name: Merge PR if no conflicts
-        if: ${{ env.mergeable == 'true' }}
+        if: env.mergeable == 'true'
         run: |
-          pr_number=${{ steps.verify_pr.outputs.pr_number }}
-          curl -X PUT -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          curl -X PUT \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
           -d '{"commit_title": "Merge ${{ env.BRANCH_NAME }} to develop", "merge_method": "merge"}' \
-          "https://api.github.com/repos/${{ github.repository }}/pulls/$pr_number/merge"
-
+          "https://api.github.com/repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}/merge"
+          
       - name: Slack Notification of successful merge
-        if: ${{ env.mergeable == 'true' }}
+        if: env.mergeable == 'true'
         run: |
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"The pull request from ${{ env.BRANCH_NAME }} to develop was successfully merged."}' ${{ secrets.SLACK_WEBHOOK_URL }}
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\"✅ The pull request from ${{ env.BRANCH_NAME }} to develop was successfully merged. PR #${{ env.PR_NUMBER }}\"}" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
+          
+      - name: Cleanup intermediate branch
+        if: env.mergeable == 'true'
+        run: |
+          git push origin --delete ${{ env.BRANCH_NAME }}
