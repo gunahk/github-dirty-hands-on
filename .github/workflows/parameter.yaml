@@ -1,12 +1,11 @@
-name: Deploy and Sync
+# .github/workflows/auto-merge.yml
+name: Auto-Merge to Develop
 
 on:
-  pull_request:
-    branches:
-      - master
-      - develop
-    types:
-      - closed
+  repository_dispatch:
+    types: [auto-merge-trigger]
+
+
   # Trigger manually
   workflow_dispatch:
     inputs:
@@ -22,81 +21,248 @@ on:
           - develop
           - master
 
+env:
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
 jobs:
-  get_deployment_details:
+  auto-merge-to-develop:
     runs-on: ubuntu-latest
-    # Only run if PR was merged or if manually triggered
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
-    defaults:
-      run:
-        working-directory: ./postgress
+    
     steps:
-      # Step 1: Checkout the repository metadata
-      - name: Checkout Repository Metadata
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.ref }}
-      
-      - name: Validate workflow_dispatch branch
-        if: github.event_name == 'workflow_dispatch'
-        id: check_workflow_dispatch
-        run: |
-          ALLOWED_BRANCHES=("develop" "master")
-          INPUT_BRANCH="${{ github.event.inputs.branch }}"
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Configure git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+    
+    - name: Generate branch name
+      id: branch_name
+      run: |
+        TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+        BRANCH_NAME="auto-merge/master-to-develop-${TIMESTAMP}"
+        echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+    
+    - name: Create intermediate branch from master
+      run: |
+        git checkout master
+        git pull origin master
+        git checkout -b ${{ steps.branch_name.outputs.branch_name }}
+        git push origin ${{ steps.branch_name.outputs.branch_name }}
+    
+    - name: Create Pull Request
+      id: create_pr
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ steps.branch_name.outputs.branch_name }}
+        base: develop
+        title: "Auto-merge: Master to Develop (${{ steps.branch_name.outputs.branch_name }})"
+        body: |
+          ## Auto-generated Pull Request
           
-          if [[ -z "$INPUT_BRANCH" ]]; then
-            echo "::error::Branch input is required for workflow_dispatch"
-            exit 1
-          fi
+          This PR was automatically created to merge changes from `master` into `develop`.
           
-          # Check if branch is in allowed list
-          if [[ ! " ${ALLOWED_BRANCHES[@]} " =~ " ${INPUT_BRANCH} " ]]; then
-            echo "::error::Branch '$INPUT_BRANCH' is not allowed. Must be one of: ${ALLOWED_BRANCHES[*]}"
-            exit 1
-          fi
+          **Source:** `master`
+          **Target:** `develop`
+          **Intermediate Branch:** `${{ steps.branch_name.outputs.branch_name }}`
+          **Triggered by workflow:** ${{ github.event.client_payload.workflow_run_id }}
+          **Source commit:** ${{ github.event.client_payload.commit_sha }}
           
-          echo "✅ Branch validation passed: $INPUT_BRANCH"
-          echo "validated-branch=$INPUT_BRANCH" >> $GITHUB_OUTPUT
-      
-      - name: Show deployment info
-        run: |
-          echo "=== Deployment Details ==="
-          echo "Event: ${{ github.event_name }}"
-          echo "Branch: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.head_ref || github.ref_name }}"
-          echo "Version: ${{ github.event.inputs.version || 'auto' }}"
-          echo "SHA: ${{ github.sha }}"
-      
-      - name: Show actors
-        env: 
-          ORIGINAL_ACTOR: ${{ github.actor }}
-          TRIGGER_ACTOR: ${{ github.triggering_actor }}
-        run: |
-          echo "Original actor: $ORIGINAL_ACTOR"
-          echo "Triggering actor: $TRIGGER_ACTOR"
-      
-      # Add your deployment steps here
-      - name: Deploy application
-        run: |
-          echo "🚀 Deploying application..."
-          echo "Version: ${{ github.event.inputs.version || 'latest' }}"
-          # Add your actual deployment commands here
-      
-      - name: Trigger sync workflow
-        # Only trigger sync if deploying from master
-        if: (github.event_name == 'workflow_dispatch' && github.event.inputs.branch == 'master') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master')
-        uses: actions/github-script@v6
-        with:
-          script: |
-            console.log('🔄 Triggering sync workflow after master deployment');
-            await github.rest.repos.createDispatchEvent({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              event_type: 'deployment-complete',
-              client_payload: {
-                ref: context.ref,
-                sha: context.sha,
-                deployed_from: '${{ github.event_name == "workflow_dispatch" && github.event.inputs.branch || github.head_ref || github.ref_name }}',
-                version: '${{ github.event.inputs.version || "auto" }}'
+          ### Changes
+          This PR contains the latest changes from the master branch.
+          
+          ---
+          *This PR was created automatically by GitHub Actions*
+        labels: |
+          auto-merge
+          automated
+    
+    - name: Wait for PR creation
+      run: sleep 10
+    
+    - name: Check for merge conflicts
+      id: check_conflicts
+      run: |
+        PR_NUMBER="${{ steps.create_pr.outputs.pull-request-number }}"
+        
+        # Get PR details
+        PR_INFO=$(gh pr view $PR_NUMBER --json mergeable,mergeStateStatus --repo ${{ github.repository }})
+        MERGEABLE=$(echo $PR_INFO | jq -r '.mergeable')
+        MERGE_STATE=$(echo $PR_INFO | jq -r '.mergeStateStatus')
+        
+        echo "mergeable=${MERGEABLE}" >> $GITHUB_OUTPUT
+        echo "merge_state=${MERGE_STATE}" >> $GITHUB_OUTPUT
+        echo "pr_number=${PR_NUMBER}" >> $GITHUB_OUTPUT
+        
+        echo "PR #${PR_NUMBER} - Mergeable: ${MERGEABLE}, State: ${MERGE_STATE}"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Send Slack notification for conflicts
+      if: steps.check_conflicts.outputs.mergeable == 'CONFLICTING'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        custom_payload: |
+          {
+            "text": ":warning: Merge Conflict Detected!",
+            "attachments": [
+              {
+                "color": "danger",
+                "fields": [
+                  {
+                    "title": "Repository",
+                    "value": "${{ github.repository }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Pull Request",
+                    "value": "<${{ github.server_url }}/${{ github.repository }}/pull/${{ steps.check_conflicts.outputs.pr_number }}|#${{ steps.check_conflicts.outputs.pr_number }}>",
+                    "short": true
+                  },
+                  {
+                    "title": "Branch",
+                    "value": "${{ steps.branch_name.outputs.branch_name }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Issue",
+                    "value": "Merge conflicts detected when trying to merge master into develop",
+                    "short": false
+                  }
+                ]
               }
-            });
-            console.log('✅ Sync workflow triggered successfully');
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    
+    - name: Wait for checks to complete
+      if: steps.check_conflicts.outputs.mergeable == 'MERGEABLE'
+      run: |
+        PR_NUMBER="${{ steps.check_conflicts.outputs.pr_number }}"
+        echo "Waiting for PR checks to complete..."
+        
+        # Wait up to 10 minutes for checks to complete
+        for i in {1..60}; do
+          PR_STATUS=$(gh pr view $PR_NUMBER --json statusCheckRollup --repo ${{ github.repository }})
+          PENDING_CHECKS=$(echo $PR_STATUS | jq -r '.statusCheckRollup[] | select(.status == "PENDING") | .status' | wc -l)
+          
+          if [ "$PENDING_CHECKS" -eq 0 ]; then
+            echo "All checks completed"
+            break
+          fi
+          
+          echo "Waiting for checks to complete... ($i/60)"
+          sleep 10
+        done
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Auto-merge Pull Request
+      if: steps.check_conflicts.outputs.mergeable == 'MERGEABLE'
+      id: merge_pr
+      run: |
+        PR_NUMBER="${{ steps.check_conflicts.outputs.pr_number }}"
+        
+        # Check if PR is still mergeable and all checks passed
+        PR_INFO=$(gh pr view $PR_NUMBER --json mergeable,mergeStateStatus,statusCheckRollup --repo ${{ github.repository }})
+        MERGEABLE=$(echo $PR_INFO | jq -r '.mergeable')
+        MERGE_STATE=$(echo $PR_INFO | jq -r '.mergeStateStatus')
+        
+        # Check if all status checks passed
+        FAILED_CHECKS=$(echo $PR_INFO | jq -r '.statusCheckRollup[] | select(.status == "FAILED") | .status' | wc -l)
+        
+        if [ "$MERGEABLE" = "MERGEABLE" ] && [ "$MERGE_STATE" = "CLEAN" ] && [ "$FAILED_CHECKS" -eq 0 ]; then
+          gh pr merge $PR_NUMBER --squash --delete-branch --repo ${{ github.repository }}
+          echo "merge_successful=true" >> $GITHUB_OUTPUT
+          echo "PR #${PR_NUMBER} merged successfully"
+        else
+          echo "merge_successful=false" >> $GITHUB_OUTPUT
+          echo "PR #${PR_NUMBER} cannot be merged. Mergeable: ${MERGEABLE}, State: ${MERGE_STATE}, Failed checks: ${FAILED_CHECKS}"
+        fi
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Send Slack notification for failed merge
+      if: steps.check_conflicts.outputs.mergeable == 'MERGEABLE' && steps.merge_pr.outputs.merge_successful == 'false'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        custom_payload: |
+          {
+            "text": ":x: Auto-merge Failed!",
+            "attachments": [
+              {
+                "color": "danger",
+                "fields": [
+                  {
+                    "title": "Repository",
+                    "value": "${{ github.repository }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Pull Request",
+                    "value": "<${{ github.server_url }}/${{ github.repository }}/pull/${{ steps.check_conflicts.outputs.pr_number }}|#${{ steps.check_conflicts.outputs.pr_number }}>",
+                    "short": true
+                  },
+                  {
+                    "title": "Branch",
+                    "value": "${{ steps.branch_name.outputs.branch_name }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Issue",
+                    "value": "Auto-merge failed due to failing checks or merge requirements not met",
+                    "short": false
+                  }
+                ]
+              }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    
+    - name: Send Slack notification for successful merge
+      if: steps.merge_pr.outputs.merge_successful == 'true'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        custom_payload: |
+          {
+            "text": ":white_check_mark: Auto-merge Successful!",
+            "attachments": [
+              {
+                "color": "good",
+                "fields": [
+                  {
+                    "title": "Repository",
+                    "value": "${{ github.repository }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Pull Request",
+                    "value": "<${{ github.server_url }}/${{ github.repository }}/pull/${{ steps.check_conflicts.outputs.pr_number }}|#${{ steps.check_conflicts.outputs.pr_number }}>",
+                    "short": true
+                  },
+                  {
+                    "title": "Branch",
+                    "value": "${{ steps.branch_name.outputs.branch_name }} → develop",
+                    "short": true
+                  },
+                  {
+                    "title": "Status",
+                    "value": "Changes from master have been successfully merged into develop",
+                    "short": false
+                  }
+                ]
+              }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
