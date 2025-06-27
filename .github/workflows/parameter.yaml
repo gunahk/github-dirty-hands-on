@@ -49,6 +49,8 @@ jobs:
     
     - name: Create intermediate branch from master
       id: create_pr
+      env: |
+        GH_TOKEN: ${{ secrets.PR_TOKEN }}
       run: |
         git checkout master
         git pull origin master
