@@ -59,8 +59,8 @@ jobs:
       uses: peter-evans/create-pull-request@v5
       with:
         token: ${{ secrets.PR_TOKEN }}
-        branch: ${{ steps.branch_name.outputs.branch_name }}
-        base: develop
+        branch: develop
+        base: ${{ steps.branch_name.outputs.branch_name }}
         title: "Auto-merge: Master to Develop (${{ steps.branch_name.outputs.branch_name }})"
         body: |
           ## Auto-generated Pull Request
