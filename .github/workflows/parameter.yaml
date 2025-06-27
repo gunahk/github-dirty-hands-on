@@ -1,276 +1,57 @@
-# .github/workflows/auto-merge.yml
-name: Auto-Merge to Develop
+name: Full Workflow with PR and Notifications
 
 on:
-  repository_dispatch:
-    types: [auto-merge-trigger]
-
-
-  # Trigger manually
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Type any version'
-        required: true
-      branch:
-        description: 'Branch to deploy from'
-        required: true
-        default: 'develop'
-        type: choice
-        options:
-          - develop
-          - master
-
-env:
-  SLACK_WEBHOOK_URL: test
+  push:
+    branches:
+      - master  # Trigger this workflow when pushing to the master branch
 
 jobs:
-  auto-merge-to-develop:
+  full-workflow:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Configure git
-      run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-    
-    - name: Generate branch name
-      id: branch_name
-      run: |
-        TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-        BRANCH_NAME="auto-merge/master-to-develop-${TIMESTAMP}"
-        echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
-    
-    - name: Create intermediate branch from master
-      id: create_pr
-      env: |
-        GH_TOKEN: ${{ secrets.PR_TOKEN }}
-      run: |
-        git checkout master
-        git pull origin master
-        git checkout -b ${{ steps.branch_name.outputs.branch_name }}
-        git push origin ${{ steps.branch_name.outputs.branch_name }}
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        
+      - name: Create Intermediate Branch from master
+        run: |
+          git checkout master
+          git pull origin master
+          git checkout -b intermediate-branch
+          git push origin intermediate-branch
 
+      - name: Create Pull Request from intermediate to develop
+        id: create_pr
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: develop
+          head: intermediate-branch
+          title: "Automated PR from intermediate-branch"
+          body: "This is an automated pull request from intermediate-branch to develop."
+          draft: false
 
-        PR_BODY="## Auto-generated Pull Request
+      - name: Check if PR has conflicts
+        id: check_pr
+        run: |
+          pr_url="https://api.github.com/repos/${{ github.repository }}/pulls"
+          pr_number=$(curl -s $pr_url | jq '.[0].number')
+          pr_status=$(curl -s $pr_url/$pr_number | jq '.mergeable')
+          echo "mergeable=$pr_status" >> $GITHUB_ENV
 
-        This PR was automatically created to merge changes from \`master\` into \`develop\`.
+      - name: Slack Notification if PR has conflicts
+        if: env.mergeable == "false"
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"The pull request from intermediate-branch to develop has conflicts."}' ${{ secrets.SLACK_WEBHOOK_URL }}
 
-        **Source:** \`master\`
-        **Target:** \`develop\`
-        **Intermediate Branch:** \`${{ steps.branch_name.outputs.branch_name }}\`
-        **Triggered by workflow:** ${{ github.event.client_payload.workflow_run_id }}
-        **Source commit:** ${{ github.event.client_payload.commit_sha }}
+      - name: Merge PR if no conflicts
+        if: env.mergeable == "true"
+        run: |
+          pr_number=$(curl -s https://api.github.com/repos/${{ github.repository }}/pulls | jq '.[0].number')
+          curl -X PUT -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -d '{"commit_title": "Merge intermediate-branch to develop", "merge_method": "merge"}' \
+          "https://api.github.com/repos/${{ github.repository }}/pulls/$pr_number/merge"
 
-        ### Changes
-        This PR contains the latest changes from the master branch.
-
-        ---
-        *This PR was created automatically by GitHub Actions*"
-
-        # Create the pull request using GitHub CLI
-        PR_URL=$(gh pr create \
-          --base develop \
-          --head ${{ steps.branch_name.outputs.branch_name }} \
-          --title "Auto-merge: Master to Develop (${{ steps.branch_name.outputs.branch_name }})" \
-          --body "$PR_BODY" \
-          --label "auto-merge,automated" \
-          --repo ${{ github.repository }})
-        
-        # Extract PR number from URL
-        PR_NUMBER=$(echo $PR_URL | sed 's/.*\/pull\///')
-        
-        echo "pull-request-url=${PR_URL}" >> $GITHUB_OUTPUT
-        echo "pull-request-number=${PR_NUMBER}" >> $GITHUB_OUTPUT
-        echo "Created PR #${PR_NUMBER}: ${PR_URL}"
-    
-    - name: Wait for PR creation
-      run: sleep 10
-    
-    - name: Check for merge conflicts
-      id: check_conflicts
-      run: |
-        PR_NUMBER="${{ steps.create_pr.outputs.pull-request-number }}"
-        
-        # Get PR details
-        PR_INFO=$(gh pr view $PR_NUMBER --json mergeable,mergeStateStatus --repo ${{ github.repository }})
-        MERGEABLE=$(echo $PR_INFO | jq -r '.mergeable')
-        MERGE_STATE=$(echo $PR_INFO | jq -r '.mergeStateStatus')
-        
-        echo "mergeable=${MERGEABLE}" >> $GITHUB_OUTPUT
-        echo "merge_state=${MERGE_STATE}" >> $GITHUB_OUTPUT
-        echo "pr_number=${PR_NUMBER}" >> $GITHUB_OUTPUT
-        
-        echo "PR #${PR_NUMBER} - Mergeable: ${MERGEABLE}, State: ${MERGE_STATE}"
-      env:
-        GH_TOKEN: ${{ secrets.PR_TOKEN }}
-    
-    - name: Send Slack notification for conflicts
-      if: steps.check_conflicts.outputs.mergeable == 'CONFLICTING'
-      uses: 8398a7/action-slack@v3
-      with:
-        status: failure
-        custom_payload: |
-          {
-            "text": ":warning: Merge Conflict Detected!",
-            "attachments": [
-              {
-                "color": "danger",
-                "fields": [
-                  {
-                    "title": "Repository",
-                    "value": "${{ github.repository }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Pull Request",
-                    "value": "<${{ github.server_url }}/${{ github.repository }}/pull/${{ steps.check_conflicts.outputs.pr_number }}|#${{ steps.check_conflicts.outputs.pr_number }}>",
-                    "short": true
-                  },
-                  {
-                    "title": "Branch",
-                    "value": "${{ steps.branch_name.outputs.branch_name }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Issue",
-                    "value": "Merge conflicts detected when trying to merge master into develop",
-                    "short": false
-                  }
-                ]
-              }
-            ]
-          }
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-    
-    - name: Wait for checks to complete
-      if: steps.check_conflicts.outputs.mergeable == 'MERGEABLE'
-      run: |
-        PR_NUMBER="${{ steps.check_conflicts.outputs.pr_number }}"
-        echo "Waiting for PR checks to complete..."
-        
-        # Wait up to 10 minutes for checks to complete
-        for i in {1..60}; do
-          PR_STATUS=$(gh pr view $PR_NUMBER --json statusCheckRollup --repo ${{ github.repository }})
-          PENDING_CHECKS=$(echo $PR_STATUS | jq -r '.statusCheckRollup[] | select(.status == "PENDING") | .status' | wc -l)
-          
-          if [ "$PENDING_CHECKS" -eq 0 ]; then
-            echo "All checks completed"
-            break
-          fi
-          
-          echo "Waiting for checks to complete... ($i/60)"
-          sleep 10
-        done
-      env:
-        GH_TOKEN: ${{ secrets.PR_TOKEN }}
-    
-    - name: Auto-merge Pull Request
-      if: steps.check_conflicts.outputs.mergeable == 'MERGEABLE'
-      id: merge_pr
-      run: |
-        PR_NUMBER="${{ steps.check_conflicts.outputs.pr_number }}"
-        
-        # Check if PR is still mergeable and all checks passed
-        PR_INFO=$(gh pr view $PR_NUMBER --json mergeable,mergeStateStatus,statusCheckRollup --repo ${{ github.repository }})
-        MERGEABLE=$(echo $PR_INFO | jq -r '.mergeable')
-        MERGE_STATE=$(echo $PR_INFO | jq -r '.mergeStateStatus')
-        
-        # Check if all status checks passed
-        FAILED_CHECKS=$(echo $PR_INFO | jq -r '.statusCheckRollup[] | select(.status == "FAILED") | .status' | wc -l)
-        
-        if [ "$MERGEABLE" = "MERGEABLE" ] && [ "$MERGE_STATE" = "CLEAN" ] && [ "$FAILED_CHECKS" -eq 0 ]; then
-          gh pr merge $PR_NUMBER --squash --delete-branch --repo ${{ github.repository }}
-          echo "merge_successful=true" >> $GITHUB_OUTPUT
-          echo "PR #${PR_NUMBER} merged successfully"
-        else
-          echo "merge_successful=false" >> $GITHUB_OUTPUT
-          echo "PR #${PR_NUMBER} cannot be merged. Mergeable: ${MERGEABLE}, State: ${MERGE_STATE}, Failed checks: ${FAILED_CHECKS}"
-        fi
-      env:
-        GH_TOKEN: ${{ secrets.PR_TOKEN }}
-    
-    - name: Send Slack notification for failed merge
-      if: steps.check_conflicts.outputs.mergeable == 'MERGEABLE' && steps.merge_pr.outputs.merge_successful == 'false'
-      uses: 8398a7/action-slack@v3
-      with:
-        status: failure
-        custom_payload: |
-          {
-            "text": ":x: Auto-merge Failed!",
-            "attachments": [
-              {
-                "color": "danger",
-                "fields": [
-                  {
-                    "title": "Repository",
-                    "value": "${{ github.repository }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Pull Request",
-                    "value": "<${{ github.server_url }}/${{ github.repository }}/pull/${{ steps.check_conflicts.outputs.pr_number }}|#${{ steps.check_conflicts.outputs.pr_number }}>",
-                    "short": true
-                  },
-                  {
-                    "title": "Branch",
-                    "value": "${{ steps.branch_name.outputs.branch_name }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Issue",
-                    "value": "Auto-merge failed due to failing checks or merge requirements not met",
-                    "short": false
-                  }
-                ]
-              }
-            ]
-          }
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-    
-    - name: Send Slack notification for successful merge
-      if: steps.merge_pr.outputs.merge_successful == 'true'
-      uses: 8398a7/action-slack@v3
-      with:
-        status: success
-        custom_payload: |
-          {
-            "text": ":white_check_mark: Auto-merge Successful!",
-            "attachments": [
-              {
-                "color": "good",
-                "fields": [
-                  {
-                    "title": "Repository",
-                    "value": "${{ github.repository }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Pull Request",
-                    "value": "<${{ github.server_url }}/${{ github.repository }}/pull/${{ steps.check_conflicts.outputs.pr_number }}|#${{ steps.check_conflicts.outputs.pr_number }}>",
-                    "short": true
-                  },
-                  {
-                    "title": "Branch",
-                    "value": "${{ steps.branch_name.outputs.branch_name }} → develop",
-                    "short": true
-                  },
-                  {
-                    "title": "Status",
-                    "value": "Changes from master have been successfully merged into develop",
-                    "short": false
-                  }
-                ]
-              }
-            ]
-          }
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Slack Notification of successful merge
+        if: env.mergeable == "true"
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"The pull request from intermediate-branch to develop was successfully merged."}' ${{ secrets.SLACK_WEBHOOK_URL }}
