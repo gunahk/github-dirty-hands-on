@@ -12,12 +12,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
         
+      - name: Generate dynamic intermediate branch name
+        id: generate_branch
+        run: |
+          # Create a dynamic branch name based on the current date and time
+          BRANCH_NAME="intermediate-branch-$(date +'%Y%m%d%H%M%S')"
+          echo "Generated branch name: $BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV  # Set this branch name as an environment variable
+
       - name: Create Intermediate Branch from master
         run: |
           git checkout master
           git pull origin master
-          git checkout -b intermediate-branch
-          git push origin intermediate-branch
+          git checkout -b ${{ env.BRANCH_NAME }}
+          git push origin ${{ env.BRANCH_NAME }}
 
       - name: Create Pull Request from intermediate to develop
         id: create_pr
@@ -25,9 +33,9 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: develop
-          head: intermediate-branch
-          title: "Automated PR from intermediate-branch"
-          body: "This is an automated pull request from intermediate-branch to develop."
+          branch: ${{ env.BRANCH_NAME }}  # Use the dynamically generated branch name
+          title: "Automated PR from ${{ env.BRANCH_NAME }}"
+          body: "This is an automated pull request from ${{ env.BRANCH_NAME }} to develop."
           draft: false
 
       - name: Check if PR has conflicts
@@ -41,17 +49,17 @@ jobs:
       - name: Slack Notification if PR has conflicts
         if: ${{ env.mergeable == 'false' }}
         run: |
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"The pull request from intermediate-branch to develop has conflicts."}' ${{ secrets.SLACK_WEBHOOK_URL }}
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"The pull request from ${{ env.BRANCH_NAME }} to develop has conflicts."}' ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Merge PR if no conflicts
         if: ${{ env.mergeable == 'true' }}
         run: |
           pr_number=$(curl -s https://api.github.com/repos/${{ github.repository }}/pulls | jq '.[0].number')
           curl -X PUT -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          -d '{"commit_title": "Merge intermediate-branch to develop", "merge_method": "merge"}' \
+          -d '{"commit_title": "Merge ${{ env.BRANCH_NAME }} to develop", "merge_method": "merge"}' \
           "https://api.github.com/repos/${{ github.repository }}/pulls/$pr_number/merge"
 
       - name: Slack Notification of successful merge
         if: ${{ env.mergeable == 'true' }}
         run: |
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"The pull request from intermediate-branch to develop was successfully merged."}' ${{ secrets.SLACK_WEBHOOK_URL }}
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"The pull request from ${{ env.BRANCH_NAME }} to develop was successfully merged."}' ${{ secrets.SLACK_WEBHOOK_URL }}
