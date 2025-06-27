@@ -168,7 +168,7 @@ jobs:
           sleep 10
         done
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.PR_TOKEN }}
     
     - name: Auto-merge Pull Request
       if: steps.check_conflicts.outputs.mergeable == 'MERGEABLE'
@@ -193,7 +193,7 @@ jobs:
           echo "PR #${PR_NUMBER} cannot be merged. Mergeable: ${MERGEABLE}, State: ${MERGE_STATE}, Failed checks: ${FAILED_CHECKS}"
         fi
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.PR_TOKEN }}
     
     - name: Send Slack notification for failed merge
       if: steps.check_conflicts.outputs.mergeable == 'MERGEABLE' && steps.merge_pr.outputs.merge_successful == 'false'
