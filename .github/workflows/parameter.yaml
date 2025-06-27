@@ -31,27 +31,15 @@ jobs:
           git pull origin master
           git checkout -b ${{ env.BRANCH_NAME }}
           
+          # Bring the intermediate branch up-to-date with the latest master changes
+          git pull origin master
+          
           # Add a dummy change to ensure the branch is different from 'develop'
           echo "Dummy change to create difference" > dummy-file.txt
           git add dummy-file.txt
           git commit -m "Add dummy change to create difference"
           
           git push origin ${{ env.BRANCH_NAME }}
-
-      - name: Check if Pull Request already exists
-        id: check_pr
-        run: |
-          pr_url="https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository }}:${{ env.BRANCH_NAME }}&base=develop"
-          pr_response=$(curl -s $pr_url)
-
-          # Check if the PR already exists
-          pr_exists=$(echo "$pr_response" | jq 'length')
-          if [[ "$pr_exists" -eq 0 ]]; then
-            echo "No existing pull request found. Proceeding to create a new one."
-          else
-            echo "PR already exists. Skipping creation."
-            exit 0
-          fi
 
       - name: Create Pull Request from intermediate to develop
         id: create_pr
@@ -63,21 +51,6 @@ jobs:
           title: "Automated PR from ${{ env.BRANCH_NAME }}"
           body: "This is an automated pull request from ${{ env.BRANCH_NAME }} to develop."
           draft: false
-
-      - name: Verify Pull Request Creation
-        id: verify_pr
-        run: |
-          pr_url="https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository }}:${{ env.BRANCH_NAME }}&base=develop"
-          pr_response=$(curl -s $pr_url)
-          
-          pr_exists=$(echo "$pr_response" | jq 'length')
-          if [[ "$pr_exists" -eq 0 ]]; then
-            echo "Pull request was not created. Exiting."
-            exit 1
-          else
-            pr_number=$(echo "$pr_response" | jq '.[0].number')
-            echo "PR created successfully with number: $pr_number"
-          fi
 
       - name: Check if PR has conflicts
         id: check_pr_conflicts
