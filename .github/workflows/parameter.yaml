@@ -39,12 +39,12 @@ jobs:
           echo "mergeable=$pr_status" >> $GITHUB_ENV
 
       - name: Slack Notification if PR has conflicts
-        if: env.mergeable == "false"
+        if: ${{ env.mergeable == 'false' }}
         run: |
           curl -X POST -H 'Content-type: application/json' --data '{"text":"The pull request from intermediate-branch to develop has conflicts."}' ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Merge PR if no conflicts
-        if: env.mergeable == "true"
+        if: ${{ env.mergeable == 'true' }}
         run: |
           pr_number=$(curl -s https://api.github.com/repos/${{ github.repository }}/pulls | jq '.[0].number')
           curl -X PUT -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
@@ -52,6 +52,6 @@ jobs:
           "https://api.github.com/repos/${{ github.repository }}/pulls/$pr_number/merge"
 
       - name: Slack Notification of successful merge
-        if: env.mergeable == "true"
+        if: ${{ env.mergeable == 'true' }}
         run: |
           curl -X POST -H 'Content-type: application/json' --data '{"text":"The pull request from intermediate-branch to develop was successfully merged."}' ${{ secrets.SLACK_WEBHOOK_URL }}
