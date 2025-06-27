@@ -101,7 +101,7 @@ jobs:
         
         echo "PR #${PR_NUMBER} - Mergeable: ${MERGEABLE}, State: ${MERGE_STATE}"
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.PR_TOKEN }}
     
     - name: Send Slack notification for conflicts
       if: steps.check_conflicts.outputs.mergeable == 'CONFLICTING'
