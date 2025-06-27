@@ -36,44 +36,54 @@ jobs:
           
       - name: Create Pull Request from intermediate to develop
         id: create_pr
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: develop
-          branch: ${{ env.BRANCH_NAME }}
-          title: "Automated PR: Sync master to develop via ${{ env.BRANCH_NAME }}"
-          body: |
-            This is an automated pull request to sync changes from master to develop.
-            
-            Source branch: ${{ env.BRANCH_NAME }} (based on master)
-            Target branch: develop
-            
-            This PR contains the latest changes from master that need to be merged into develop.
-          draft: false
-          
-      - name: Get PR number
-        id: get_pr_number
         run: |
-          # Wait for PR to be created
-          sleep 5
+          pr_response=$(curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{
+              "title": "Automated PR: Sync master to develop via ${{ env.BRANCH_NAME }}",
+              "body": "This is an automated pull request to sync changes from master to develop.\n\nSource branch: ${{ env.BRANCH_NAME }} (based on master)\nTarget branch: develop\n\nThis PR contains the latest changes from master that need to be merged into develop.",
+              "head": "${{ env.BRANCH_NAME }}",
+              "base": "develop"
+            }' \
+            "https://api.github.com/repos/${{ github.repository }}/pulls")
           
-          # Get PR number for intermediate branch -> develop
-          pr_number=$(gh pr list --head ${{ env.BRANCH_NAME }} --base develop --json number --jq '.[0].number')
+          echo "PR Response: $pr_response"
           
-          if [ "$pr_number" = "null" ] || [ -z "$pr_number" ]; then
-            echo "No PR found, checking again..."
-            sleep 5
-            pr_number=$(gh pr list --head ${{ env.BRANCH_NAME }} --base develop --json number --jq '.[0].number')
+          # Extract PR number from response
+          pr_number=$(echo "$pr_response" | jq -r '.number')
+          
+          if [ "$pr_number" != "null" ] && [ -n "$pr_number" ]; then
+            echo "Successfully created PR #$pr_number"
+            echo "PR_NUMBER=$pr_number" >> $GITHUB_ENV
+          else
+            echo "Failed to create PR"
+            echo "PR_NUMBER=" >> $GITHUB_ENV
+            echo "Error: $pr_response"
           fi
           
-          echo "Found PR number: $pr_number"
-          echo "PR_NUMBER=$pr_number" >> $GITHUB_ENV
-          echo "pr_number=$pr_number" >> $GITHUB_OUTPUT
+      - name: Get PR number (backup method)
+        id: get_pr_number
+        if: env.PR_NUMBER == ''
+        run: |
+          echo "Trying backup method to find PR..."
+          sleep 3
+          
+          # Get PR number for intermediate branch -> develop using GitHub CLI
+          pr_number=$(gh pr list --head ${{ env.BRANCH_NAME }} --base develop --json number --jq '.[0].number')
+          
+          if [ "$pr_number" != "null" ] && [ -n "$pr_number" ]; then
+            echo "Found PR using backup method: $pr_number"
+            echo "PR_NUMBER=$pr_number" >> $GITHUB_ENV
+          else
+            echo "No PR found with backup method either"
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Check if PR has conflicts
         id: check_pr_conflicts
+        if: env.PR_NUMBER != '' && env.PR_NUMBER != 'null'
         run: |
           # Wait a moment for GitHub to process the PR
           sleep 5
