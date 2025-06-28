@@ -1,23 +1,23 @@
 name: Full Workflow with PR and Notifications
-on:
-  push:
-    branches:
-      - master  # Trigger this workflow when pushing to the master branch
+# on:
+#   push:
+#     branches:
+#       - master  # Trigger this workflow when pushing to the master branch
 
 # name: Full Workflow with PR and Notifications
-# on:
-#   workflow_run:
-#     workflows: ["deploy_into_EKS_cluster_dashboard_api_beacon_flow"]  # Your CD workflow name
-#     types:
-#       - completed
-#     branches:
-#       - master
+on:
+  workflow_run:
+    workflows: ["Auto-sync Master to Develop"]  
+    types:
+      - completed
+    branches:
+      - master
 
 jobs:
   full-workflow:
     runs-on: ubuntu-latest
     # Only run if the CD workflow was successful
-    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4  
