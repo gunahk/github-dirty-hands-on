@@ -4,38 +4,87 @@ on:
     branches:
       - master  # Trigger this workflow when pushing to the master branch
 
+# name: Full Workflow with PR and Notifications
+# on:
+#   workflow_run:
+#     workflows: ["deploy_into_EKS_cluster_dashboard_api_beacon_flow"]  # Your CD workflow name
+#     types:
+#       - completed
+#     branches:
+#       - master
+
 jobs:
   full-workflow:
     runs-on: ubuntu-latest
+    # Only run if the CD workflow was successful
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4  # Updated to latest version
         with:
           fetch-depth: 0  # Fetch full history for proper branching
-        
-      - name: Generate dynamic intermediate branch name
-        id: generate_branch
-        run: |
-          # Create a dynamic branch name based on the current date and time
-          BRANCH_NAME="intermediate-branch-$(date +'%Y%m%d%H%M%S')"
-          echo "Generated branch name: $BRANCH_NAME"
-          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
           
       - name: Set Git user identity
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
           
-      - name: Create intermediate branch from master
+      - name: Check if PR is needed
+        id: check_diff
         run: |
+          git fetch origin develop
+          git fetch origin master
+          
+          # Check if there are differences between master and develop
+          if git diff --quiet origin/master origin/develop; then
+            echo "No differences between master and develop branches"
+            echo "needs_pr=false" >> $GITHUB_ENV
+          else
+            echo "Differences found between master and develop branches"  
+            echo "needs_pr=true" >> $GITHUB_ENV
+            
+            # Show what changes exist
+            echo "Changes summary:"
+            git log --oneline origin/develop..origin/master
+          fi
+          
+      - name: Slack Notification - No PR needed
+        if: env.needs_pr == 'false'
+        run: |
+          ACTIONS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ACTIONS_ACTOR=${{ github.actor }}
+          BRANCH_NAME="master"
+          REPO_NAME=${{ github.repository }}
+          
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{
+            "attachments": [
+              {
+                "color": "#36a64f",
+                "text": ":information_source: No need to merge to develop - branches are already in sync \nREPO_NAME: '"${REPO_NAME}"' \nBranch: '"${BRANCH_NAME}"' \nTriggered by CD success \nReview the details here: <'"${ACTIONS_URL}"'|Click to View>"
+              }
+            ]
+          }' \
+          ${{ secrets.RELEASE_SLACK_URL }}
+          
+      - name: Create intermediate branch from master
+        if: env.needs_pr == 'true'
+        run: |
+          # Generate dynamic branch name based on current date and time
+          BRANCH_NAME="intermediate-branch-$(date +'%Y%m%d%H%M%S')"
+          echo "Generated branch name: $BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          
+          # Create and push the intermediate branch
           git fetch origin develop
           git checkout master
           git pull origin master
-          git checkout -b ${{ env.BRANCH_NAME }}
-          git push origin ${{ env.BRANCH_NAME }}
+          git checkout -b $BRANCH_NAME
+          git push origin $BRANCH_NAME
           
       - name: Create Pull Request from intermediate to develop
         id: create_pr
+        if: env.needs_pr == 'true'
         run: |
           pr_response=$(curl -s -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
@@ -64,7 +113,7 @@ jobs:
           
       - name: Get PR number (backup method)
         id: get_pr_number
-        if: env.PR_NUMBER == ''
+        if: env.PR_NUMBER == '' && env.needs_pr == 'true'
         run: |
           echo "Trying backup method to find PR..."
           sleep 3
@@ -83,7 +132,7 @@ jobs:
           
       - name: Check if PR has conflicts
         id: check_pr_conflicts
-        if: env.PR_NUMBER != '' && env.PR_NUMBER != 'null'
+        if: env.PR_NUMBER != '' && env.PR_NUMBER != 'null' && env.needs_pr == 'true'
         run: |
           # Wait a moment for GitHub to process the PR
           sleep 5
@@ -97,14 +146,26 @@ jobs:
           echo "mergeable=$pr_status" >> $GITHUB_OUTPUT
           
       - name: Slack Notification if PR has conflicts
-        if: env.mergeable == 'false' && env.PR_NUMBER != '' && env.PR_NUMBER != 'null'
+        if: env.mergeable == 'false' && env.PR_NUMBER != '' && env.PR_NUMBER != 'null' && env.needs_pr == 'true'
         run: |
+          ACTIONS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ACTIONS_ACTOR=${{ github.actor }}
+          BRANCH_NAME="master"
+          REPO_NAME=${{ github.repository }}
+          
           curl -X POST -H 'Content-type: application/json' \
-          --data "{\"text\":\"⚠️ The pull request to sync master->develop has conflicts. PR #${{ env.PR_NUMBER }}\"}" \
-          ${{ secrets.SLACK_WEBHOOK_URL }}
+          --data '{
+            "attachments": [
+              {
+                "color": "#FF8C00",
+                "text": ":warning: The automated PR from master to develop has conflicts \nPR #'"${{ env.PR_NUMBER }}"' \nREPO_NAME: '"${REPO_NAME}"' \nBranch: '"${BRANCH_NAME}"' \nTriggered by CD success \nReview the details here: <'"${ACTIONS_URL}"'|Click to View>"
+              }
+            ]
+          }' \
+          ${{ secrets.RELEASE_SLACK_URL }}
           
       - name: Merge PR if no conflicts
-        if: env.mergeable == 'true' && env.PR_NUMBER != '' && env.PR_NUMBER != 'null'
+        if: env.mergeable == 'true' && env.PR_NUMBER != '' && env.PR_NUMBER != 'null' && env.needs_pr == 'true'
         run: |
           curl -X PUT \
           -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
@@ -113,20 +174,44 @@ jobs:
           "https://api.github.com/repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}/merge"
           
       - name: Slack Notification of successful merge
-        if: env.mergeable == 'true' && env.PR_NUMBER != '' && env.PR_NUMBER != 'null'
+        if: env.mergeable == 'true' && env.PR_NUMBER != '' && env.PR_NUMBER != 'null' && env.needs_pr == 'true'
         run: |
+          ACTIONS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ACTIONS_ACTOR=${{ github.actor }}
+          BRANCH_NAME="master"
+          REPO_NAME=${{ github.repository }}
+          
           curl -X POST -H 'Content-type: application/json' \
-          --data "{\"text\":\"✅ The pull request to sync master->develop was successfully merged. PR #${{ env.PR_NUMBER }}\"}" \
-          ${{ secrets.SLACK_WEBHOOK_URL }}
+          --data '{
+            "attachments": [
+              {
+                "color": "#36a64f",
+                "text": ":white_check_mark: The automated PR from master to develop was successfully merged \nPR #'"${{ env.PR_NUMBER }}"' \nREPO_NAME: '"${REPO_NAME}"' \nBranch: '"${BRANCH_NAME}"' \nTriggered by CD success \nReview the details here: <'"${ACTIONS_URL}"'|Click to View>"
+              }
+            ]
+          }' \
+          ${{ secrets.RELEASE_SLACK_URL }}
           
       - name: Cleanup intermediate branch
-        if: env.mergeable == 'true' && env.PR_NUMBER != '' && env.PR_NUMBER != 'null'
+        if: env.mergeable == 'true' && env.PR_NUMBER != '' && env.PR_NUMBER != 'null' && env.needs_pr == 'true'
         run: |
           git push origin --delete ${{ env.BRANCH_NAME }}
           
       - name: Slack Notification if PR creation failed
-        if: env.PR_NUMBER == '' || env.PR_NUMBER == 'null'
+        if: (env.PR_NUMBER == '' || env.PR_NUMBER == 'null') && env.needs_pr == 'true'
         run: |
+          ACTIONS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ACTIONS_ACTOR=${{ github.actor }}
+          BRANCH_NAME="master"
+          REPO_NAME=${{ github.repository }}
+          
           curl -X POST -H 'Content-type: application/json' \
-          --data "{\"text\":\"❌ Failed to create PR from ${{ env.BRANCH_NAME }} to develop. Check workflow logs.\"}" \
-          ${{ secrets.SLACK_WEBHOOK_URL }}
+          --data '{
+            "attachments": [
+              {
+                "color": "#FF0000",
+                "text": ":x: Failed to create automated PR from master to develop \nREPO_NAME: '"${REPO_NAME}"' \nBranch: '"${BRANCH_NAME}"' \nTriggered by CD success \nReview the details here: <'"${ACTIONS_URL}"'|Click to View>"
+              }
+            ]
+          }' \
+          ${{ secrets.RELEASE_SLACK_URL }}
